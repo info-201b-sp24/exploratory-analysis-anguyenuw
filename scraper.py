@@ -25,7 +25,9 @@ async def main():
     #name = await api.user("RMEfan", mode=GameMode.OSU, key=UserLookupKey.USERNAME)
     #print(name.id)
     #for i in range()
-    start_id = 107474593
+    # 110682497 rts gf
+    # 107474593 ocl gf
+    start_id = 110682497
     match = None
     for i in range(start_id, start_id + 1):
         try:
@@ -45,14 +47,25 @@ async def main():
         lid = match_response.latest_event_id
         events = match_response.events
         
-        print(f"id {i}")
+        print(f"match id {i}")
         print([user.username for user in users])
         user_dict = dict()
         for user in users:
             user_dict[user.id] = user.username
         print(match)
-        print(fid)
-        print(lid)
+        print(f"first event id {fid}")
+        print(f"last event id  {lid}")
+
+        # with open("csvfiles/testing.csv", "w", newline='') as f:
+        #     writer = csv.writer(f)
+        #     writer.writerow(("Match ID", 
+        #                 "Datetime", 
+        #                 "Map ID", 
+        #                 "User ID", 
+        #                 "Username", 
+        #                 "Mods", 
+        #                 "Score"))
+
         for event in events:
             # print(f"id {event.id}")
             if not event.detail.type == MatchEventType.OTHER:
@@ -65,7 +78,7 @@ async def main():
             bm = game.beatmap
             bm_id = game.beatmap_id
             mset = bm._beatmapset
-            print(f"played {mset.artist} - {mset.title}")
+            print(f"\nevent id {eid} played {mset.artist} - {mset.title}")
             for score in game.scores:
                 print(f"{user_dict[score.user_id]} got {score.score} on {bm_id}")
                 line = (i, 
@@ -76,15 +89,13 @@ async def main():
                         score.mods, 
                         score.score)
                 await write_csv(line)
-
-
-        
     pass
 
 
 async def write_csv(obj):
     # TODO: use append mode for multiple sessions
     with open("csvfiles/testing.csv", "a", newline='') as f:
+
         writer = csv.writer(f)
         writer.writerow(obj)
         

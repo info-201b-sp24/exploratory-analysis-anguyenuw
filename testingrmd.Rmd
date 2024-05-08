@@ -1,0 +1,51 @@
+---
+title: "testingrmd"
+author: "Anh-Minh Nguyen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+library("PlayerRatings")
+
+setwd("C:/Users/mrche/info201/exploratory-analysis-anguyenuw")
+
+f <- read.csv("csvfiles/testing.csv")
+
+colnames(f)
+#ncol(f)
+#nrow(f)
+#View(f)
+
+# loop through each match
+# loop through each map
+match_ids <- unique(f$Match.ID)
+for (match_id in match_ids) {
+  print(" ")
+  match <- f[f$Match.ID == match_id,]
+  print(match_id)
+  maps <- unique(match$Map.ID)
+  print(maps)
+  for (map in maps) {
+    scores <- match[match$Map.ID == map, ]
+    print(scores)
+  }
+}
+
+
+robj <- elom(riichi)
+robj
+ut <- unique(riichi$Time)
+robj <- elom(riichi[riichi$Time == ut[1],])
+for(i in 2:length(ut)) {
+robj <- elom(riichi[riichi$Time == ut[i],], status = robj$ratings)
+}
+robj
+
+
+#tourney_elos <- elom(t_history, nn = 16, exact = FALSE, base = c(), )
+
+
