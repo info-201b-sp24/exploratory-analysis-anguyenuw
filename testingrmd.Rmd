@@ -20,18 +20,59 @@ colnames(f)
 #nrow(f)
 #View(f)
 
+base <- c(50, 40, 32, 26, 22, 18, 14, 10, -10, -14, -18, -22, -26, -32, -40, -50)
+base <- c(50, 40, 32, 26, 22, 18, 14, 10, -10, -14, -18, -22, -26, -32, -40, -50)
+#TODO - iteratively run the elom algo for each map, using an appropriately sized base vector
+base3 <- c(0, 0, 0, 0, 0, 0, 0, 0, -10, -14, -18, -22, -26, -32, -40, -50)
+base2 <- c(30,10,-10,-30,0,0,0,0,0)
+base4 <- c(30, 10, -10, -30)
 # loop through each match
 # loop through each map
+max_players <- 9
+player_vec = numeric(max_players)
+score_vec = numeric(max_players)
+
+score_history <- data.frame(matrix(ncol = 1 + 2*max_players, nrow = 0))
+#colnames(score_history) <- c("Time", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10", "p11", "p12", "p13", "p14", "p15", "p16", "score1", "score2", "score3", "score4", "score5", "score6", "score7", "score8", "score9", "score10", "score11", "score12", "score13", "score14", "score15", "score16")
+colnames(score_history) <- c("Time", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "score1", "score2", "score3", "score4", "score5", "score6", "score7", "score8", "score9")
+#colnames(score_history) <- c("Time", "p1", "p2", "p3", "p4", "score1", "score2", "score3", "score4")
+
+# for each match,
 match_ids <- unique(f$Match.ID)
 for (match_id in match_ids) {
-  print(" ")
+  #print(" ")
   match <- f[f$Match.ID == match_id,]
-  print(match_id)
+  #print(match_id)
   maps <- unique(match$Map.ID)
-  print(maps)
+  #print(maps)
+# for each map,
   for (map in maps) {
     scores <- match[match$Map.ID == map, ]
-    print(scores)
+    #print(scores)
+# add a vector of the form (Time, p1_id, p2_id, ... p1_score, p2_score, ...)
+#for (score in scores) {
+    player_vec = numeric(max_players)
+    score_vec = numeric(max_players)
+    num_players <- nrow(scores)
+# there are at most 16 players in an osu! lobby
+    date <- as.numeric(strptime(scores$Datetime[1], format="%Y-%m-%d %H:%M:%S", tz="UTC"))
+    for (player_n in 1:max_players) {
+#TODO: should be num_players
+      if (player_n <= max_players) {
+        player_vec[player_n] <- scores$Username[player_n]
+        score_vec[player_n] <- scores$Score[player_n]
+        }
+      else {
+        player_vec[player_n] <- NA
+        score_vec[player_n] <- NA
+        #print("too many")
+        #print(player_n)
+      }
+    }
+#}
+    score_history[nrow(score_history) + 1, 1] = date
+    score_history[nrow(score_history), 2:(1 + max_players)] = player_vec
+    score_history[nrow(score_history), (2 + max_players):(1 + 2*max_players)] = score_vec
   }
 }
 
@@ -45,6 +86,12 @@ robj <- elom(riichi[riichi$Time == ut[i],], status = robj$ratings)
 }
 robj
 
+
+
+
+osu_ratings <- elom(score_history, nn = 9, exact = FALSE, base = base2, history = FALSE)
+
+ut <- unique(score_history$Time)
 
 #tourney_elos <- elom(t_history, nn = 16, exact = FALSE, base = c(), )
 
