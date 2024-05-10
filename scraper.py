@@ -18,7 +18,7 @@ db = sqlite3.connect("awesome.db")
 
 # a tournament match is defined as a multiplayer match whose name fits the format
 #   ABBR: (team 1) vs (team 2)
-tourney_re = re.compile(r".*: \(.*\) vs\.? \(.*\)")
+tourney_re = re.compile(r".*: \(.*\) [vV][sS]?\.? \(.*\)")
 
 async def main():
     cur = db.cursor()
@@ -47,9 +47,11 @@ async def main():
               107082999,107163395,107186478,107202847,107202335,107343096,107474593,)
     # ocl qual w23
     moreidsids = (106503364, 106508352, 106526178, 106526896, 106528049, 106530354, 106534327, 106531363, 106540332, 106541457, 106545033, 106549892, 106551091, 106553123, 106554423, 106555769)
+    ads_24_d1 = (113104530,113122523,113123198,112996405,113006237,113026360,113027534,112832449,112927390,112912565,112925753,112927374,112928548,112930240,112929414,112831314,112929834,112800830,112913789)
+    owc_23 = (111534249,111554331,111555364,111451190,111457054,111460173,111466879,111349795,111350765,111352735,111356742,111360796,111366414,111368903,111372515,111253985,111256134,111256976,111257938,111258934,111260018,111260487,111261974,111265019,111271525,111272312,111273436,111273441,111274743,111276018,111278789,111152642,111165133,111167951,111168903,111170809,111170821,111171785,111178942,111178945,111183369,111183363,111183770,111184163,111184941,111187488,111188366,111062319,111063878,111072298,111073334,111073335,111081251,111083508,111083501,111084580,111085330,111085320,111085343,111086282,111086205,111087337,111091065)
     match = None
-    overwrite = False
-    dest = "csvfiles/ocl_w23_withq.csv"
+    overwrite = True
+    dest = "csvfiles/owc_23.csv"
     if overwrite: 
         with open(dest, "w", newline='') as f:
             writer = csv.writer(f)
@@ -60,12 +62,11 @@ async def main():
                         "Username", 
                         "Mods", 
                         "Score"))
-    for i in moreidsids:
+    for i in owc_23:
         try:
             time.sleep(.3)
             match_response = await api.match(i)
         except Exception:
-            print()
             print(f"id {i} failed")
             continue
         #print()
@@ -79,7 +80,7 @@ async def main():
         lid = match_response.latest_event_id
         events = match_response.events
         
-        #print(f"match id {i}")
+        print(f"match id {i}")
         #print([user.username for user in users])
         user_dict = dict()
         for user in users:
