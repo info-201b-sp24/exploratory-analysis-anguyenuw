@@ -8,17 +8,29 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+install.packages("PlayerRatings")
 library("PlayerRatings")
-
+library("dplyr")
 setwd("C:/Users/mrche/info201/exploratory-analysis-anguyenuw")
 
 f <- read.csv("csvfiles/testing.csv")
+ocl_w23_withq <- read.csv("csvfiles/ocl_w23_withq.csv")
 
 colnames(f)
 #ncol(f)
 #nrow(f)
 #View(f)
+
+
+
+
+
+
+#method 1: compare players to their opponents and teammates
+# sort by datetime, 
+# per match, per map, log each player's score
+# then, send this log into EloM.
+```{r}
 
 base <- c(50, 40, 32, 26, 22, 18, 14, 10, -10, -14, -18, -22, -26, -32, -40, -50)
 base <- c(50, 40, 32, 26, 22, 18, 14, 10, -10, -14, -18, -22, -26, -32, -40, -50)
@@ -32,18 +44,24 @@ max_players <- 9
 player_vec = numeric(max_players)
 score_vec = numeric(max_players)
 
+by_dt <- arrange(f, Datetime)
+
 score_history <- data.frame(matrix(ncol = 1 + 2*max_players, nrow = 0))
 #colnames(score_history) <- c("Time", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10", "p11", "p12", "p13", "p14", "p15", "p16", "score1", "score2", "score3", "score4", "score5", "score6", "score7", "score8", "score9", "score10", "score11", "score12", "score13", "score14", "score15", "score16")
 colnames(score_history) <- c("Time", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "score1", "score2", "score3", "score4", "score5", "score6", "score7", "score8", "score9")
 #colnames(score_history) <- c("Time", "p1", "p2", "p3", "p4", "score1", "score2", "score3", "score4")
 
+
+
 # for each match,
-match_ids <- unique(f$Match.ID)
+match_ids <- unique(by_dt$Match.ID)
+#match_ids <- unique(f$Match.ID)[1]
 for (match_id in match_ids) {
   #print(" ")
-  match <- f[f$Match.ID == match_id,]
+  match <- by_dt[by_dt$Match.ID == match_id,]
   #print(match_id)
   maps <- unique(match$Map.ID)
+#maps <- match$Map.ID[1] 
   #print(maps)
 # for each map,
   for (map in maps) {
@@ -51,8 +69,8 @@ for (match_id in match_ids) {
     #print(scores)
 # add a vector of the form (Time, p1_id, p2_id, ... p1_score, p2_score, ...)
 #for (score in scores) {
-    player_vec = numeric(max_players)
-    score_vec = numeric(max_players)
+    player_vec <- numeric(max_players)
+    score_vec <- numeric(max_players)
     num_players <- nrow(scores)
 # there are at most 16 players in an osu! lobby
     date <- as.numeric(strptime(scores$Datetime[1], format="%Y-%m-%d %H:%M:%S", tz="UTC"))
@@ -70,26 +88,81 @@ for (match_id in match_ids) {
       }
     }
 #}
-    score_history[nrow(score_history) + 1, 1] = date
-    score_history[nrow(score_history), 2:(1 + max_players)] = player_vec
-    score_history[nrow(score_history), (2 + max_players):(1 + 2*max_players)] = score_vec
+    score_history[nrow(score_history) + 1, 1] <- date
+    score_history[nrow(score_history), 2:(1 + max_players)] <- player_vec
+    score_history[nrow(score_history), (2 + max_players):(1 + 2*max_players)] <- score_vec
   }
 }
+osu_ratings_m1 <- elom(score_history, nn = max_players, exact = FALSE, base = base2, history = FALSE)
+```
 
+#method 2: compare players to everyone who played the same map, 
+#            within a certain timeframe
 
-robj <- elom(riichi)
-robj
-ut <- unique(riichi$Time)
-robj <- elom(riichi[riichi$Time == ut[1],])
-for(i in 2:length(ut)) {
-robj <- elom(riichi[riichi$Time == ut[i],], status = robj$ratings)
+# sort by datetime
+# while there are maps to be processed:
+#   take the first map in the dataset.
+#   select all scores set on that map in the following 2 weeks.
+#     call this subset map_scores.
+#     delete map_scores from the dataset.
+#   run an EloM iteration on all n scores in map_scores,
+#     simulating a player count of n.
+#     use a base vector of n values, linearly interpolated from 30 to -30.
+```{r}
+ocl_w23_withq <- read.csv("csvfiles/ocl_w23_withq.csv")
+A <- function(x) as.numeric(strptime(x, format="%Y-%m-%d %H:%M:%S", tz="UTC"))
+g <- ocl_w23_withq
+g$Datetime <- unlist(lapply(ocl_w23_withq$Datetime, A))
+
+by_datetime <- arrange(g, Datetime)
+
+map1 <- by_datetime$Map.ID[1]
+datetime1 <- by_datetime$Datetime[1]
+sample_case <- filter(by_datetime, Map.ID == map1, Datetime < datetime1 + 100000)
+
+# expressed in seconds
+time_limit <- 1209600
+
+osu_ratings_m2 <- NULL
+while (nrow(by_datetime) > 0) {
+  map <- by_datetime$Map.ID[1]
+  time <- by_datetime$Datetime[1]
+  map_scores <- filter(by_datetime, Map.ID == map, Datetime < time + time_limit)
+  by_datetime <- filter(by_datetime, (Map.ID != map) | (Datetime >= time + time_limit))
+  
+  
+  
+  num_players <- nrow(map_scores)
+  base <- seq(30, -30, length.out=num_players)
+  players_and_scores <- data.frame(matrix(ncol = 1 + 2*num_players, nrow = 0))
+  player_vec <- map_scores$Username
+  score_vec <- map_scores$Score
+  
+  if (length(player_vec) < 1) {
+    print("Oops")
+    print(nrow(by_datetime))
+  }
+  
+  players_and_scores[1, 1] <- time
+  players_and_scores[1, 2:(1 + num_players)] <- player_vec
+  players_and_scores[1, (2 + num_players):(1 + 2*num_players)] <- score_vec
+  
+  osu_ratings_m2 <- elom(players_and_scores, 
+                         nn = num_players,
+                         base = base, 
+                         status = osu_ratings_m2$ratings,
+                         history = TRUE)
 }
-robj
+
+```
 
 
+score_history <- arrange(score_history, Time)
 
 
-osu_ratings <- elom(score_history, nn = 9, exact = FALSE, base = base2, history = FALSE)
+osu_ratings <- elom(score_history, nn = max_players, exact = FALSE, base = base2, history = TRUE)
+
+hist(osu_ratings, history=FALSE, density=FALSE)
 
 ut <- unique(score_history$Time)
 
