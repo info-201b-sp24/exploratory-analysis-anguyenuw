@@ -5,6 +5,7 @@ import re
 import sqlite3
 import csv
 import datetime
+import traceback
 from time import sleep
 from constants import *
 from ossapi import OssapiAsync, UserLookupKey, GameMode, RankingType, MatchEventType, BeatmapsetCompact, Ossapi
@@ -155,9 +156,10 @@ async def scrape_known_mps():
 
 async def scrape_all():
     # range history
-    # 106002000, 106026500, 106051000, 106075500
-    start_id = 106062100
-    end_id =   106075500
+    # 106002000, 106026500, 106051000, 106075500, 106090600
+    # 106090600, 106470600, 106850600, 107230600, 107610600, 107900000
+    start_id = 107610600
+    end_id =   107900000
     overwrite = False
     dest = "csvfiles/all_mps.csv"
     logdest = "csvfiles/id_abbrs.csv"
@@ -252,8 +254,10 @@ async def scrape_all():
                             score.score)
                     await write_csv(line, dest)
         except Exception:
-            print(f"something went wrong id {i}")
-            continue
+            with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
+                print(f"something went wrong id {i}", file=f)
+                print("\nERROR: \n", file=f)
+                traceback.print_exc(file=f)
         
 
 async def test():
