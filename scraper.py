@@ -157,23 +157,23 @@ async def scrape_known_mps():
 async def scrape_all():
     # range history
     # 106002000, 106026500, 106051000, 106075500, 106090600
-    # 106090600, 106470600, 106850600, 107230600, 107610600, 107900000
-    start_id = 107610600
-    end_id =   107900000
+    # 106090600, 106470600, 106850600, 107230600, 107610600, 107978000
+    start_id = 107970000
+    end_id =   107978000
     overwrite = False
     dest = "csvfiles/all_mps.csv"
     logdest = "csvfiles/id_abbrs.csv"
-    if overwrite: 
-        with open(dest, "w", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(("Match ID", 
-                        "Tourney Abbreviation",
-                        "Datetime", 
-                        "Map ID", 
-                        "User ID", 
-                        "Username", 
-                        "Mods", 
-                        "Score"))
+    # if overwrite: 
+    #     with open(dest, "w", newline='') as f:
+    #         writer = csv.writer(f)
+    #         writer.writerow(("Match ID", 
+    #                     "Tourney Abbreviation",
+    #                     "Datetime", 
+    #                     "Map ID", 
+    #                     "User ID", 
+    #                     "Username", 
+    #                     "Mods", 
+    #                     "Score"))
     prev_time = datetime.datetime.now()
     for i in range(start_id, end_id):
         try:
