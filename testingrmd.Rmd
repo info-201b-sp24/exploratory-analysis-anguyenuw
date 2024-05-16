@@ -9,20 +9,24 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 install.packages("PlayerRatings")
+install.packages("dplyr")
+
 library("PlayerRatings")
 library("dplyr")
 setwd("C:/Users/mrche/info201/exploratory-analysis-anguyenuw")
 
 f <- read.csv("csvfiles/testing.csv")
 ocl_w23_withq <- read.csv("csvfiles/ocl_w23_withq.csv")
-
+all_mps <- read.csv("csvfiles/all_mps.csv") %>%
+          filter(!is.na(User.ID))
 colnames(f)
 #ncol(f)
 #nrow(f)
 #View(f)
 
-
-
+no_broken <- all_mps %>% filter(!is.na(User.ID))
+womp <- all_mps %>% filter(!is.na(User.ID))
+wompa <- all_mps %>% filter(is.na(User.ID))
 
 
 
@@ -119,11 +123,22 @@ while (nrow(by_datetime) > 0) {
   time <- by_datetime$Datetime[1]
   
   # split dataset into scores on this map + within timeframe, and every other score
-  map_scores <- filter(by_datetime, Map.ID == map, Datetime < time + time_limit)
-  by_datetime <- filter(by_datetime, (Map.ID != map) | (Datetime >= time + time_limit))
+  #map_scores <- filter(by_datetime, Map.ID == map, Datetime < time + time_limit)
+  map_scores <- by_datetime %>%
+    filter(Map.ID == map, 
+           Datetime < time + time_limit)
+  
+  #by_datetime <- filter(by_datetime, (Map.ID != map) | (Datetime >= time + time_limit))
+  by_datetime <- by_datetime %>%
+    filter((Map.ID != map) |
+             (Datetime >= time + time_limit))
   
   # set up inputs to elom
   num_players <- nrow(map_scores)
+  
+  # skip if only 1 player is found
+  if (num_players==1) next
+  
   base <- seq(30, -30, length.out=num_players)
   players_and_scores <- data.frame(matrix(ncol = 1 + 2*num_players, nrow = 0))
   player_vec <- map_scores$Username
@@ -138,10 +153,148 @@ while (nrow(by_datetime) > 0) {
                          nn = num_players,
                          base = base, 
                          status = osu_ratings_m2$ratings,
-                         history = TRUE)
+                         history = FALSE)
 }
 View(osu_ratings_m2$ratings)
 ```
+
+
+#method 3: same as method 2, but more efficient
+
+#phase 1 - collect scores
+#  group by map ID, split by groups
+#  list score_history stores inputs to elom
+#  df time_indices stores associations between Datetime 
+#     and entry indices in score_history
+#  for each group -
+#     while there are scores to be processed:
+#       select all scores set on that map in the following 2 weeks.
+#         call this subset map_scores.
+#         delete map_scores from the group.
+#       process into a 1-row dataframe containing timestamp, players, scores
+#       add an entry to score_history with timestamp and matrix
+#       add a row to time_indices with timestamp and latest score_history index
+
+#phase 2 - sort score vectors 
+#  sort score history by datetime
+#  create final score history dataframe and base matrix
+
+#phase 3 - calculate elo
+#
+#  iteratively send through elom in temporal order
+
+```{r}
+scores <- read.csv("csvfiles/all_mps.csv") %>%
+          filter(!is.na(User.ID))
+A <- function(x) as.numeric(strptime(x, format="%Y-%m-%d %H:%M:%S", tz="UTC"))
+scores$Datetime <- unlist(lapply(scores$Datetime, A))
+scores <- scores %>% arrange(Datetime)
+
+# expressed in seconds
+# 1209600 seconds = 2 weeks
+time_limit <- 1209600
+
+# shard data by maps
+scores <- scores %>% group_split(Map.ID)
+
+
+score_history <- list()
+time_indices <- data.frame(matrix(ncol = 2, nrow = 0))
+colnames(time_indices) <- c("Datetime", "Index")
+
+# phase 1 - collect scores
+for (map_shard in scores) {
+  while (nrow(map_shard) > 0) {
+    # get data on the earliest score in the shard
+    map <- map_shard$Map.ID[1]
+    time <- map_shard$Datetime[1]
+    
+    # split shard into scores within timeframe and scores beyond timeframe
+    map_scores <- map_shard %>%
+      filter(Datetime < time + time_limit)
+    map_shard <- map_shard %>%
+      filter(Datetime >= time + time_limit)
+    
+    # set up input to elom
+    n <- nrow(map_scores)
+    
+    # skip if only 1 player is found
+    if (n==1) next
+    
+    #
+    players_and_scores <- data.frame(matrix(ncol = 1 + 2*n, nrow = 0))
+    #player_vec <- map_scores$Username
+    #score_vec <- map_scores$Score
+    
+    players_and_scores[1, 1] <- time
+    players_and_scores[1, 2:(1 + n)] <- map_scores$Username
+    players_and_scores[1, (2 + n):(1 + 2*n)] <- map_scores$Score
+    
+    index = length(score_history) + 1
+    score_history[[index]] = players_and_scores
+    time_indices <- time_indices %>% add_row(Datetime=time, Index=index)
+  }
+}
+
+
+# phase 2 - sort score vectors, compile sorted score history
+#           calculate base matrix
+time_indices <- time_indices %>% arrange(Datetime)
+maxsize = 0
+# find largest scorevec
+for (index in time_indices$Index) {
+  size <- (length(score_history[[index]]) - 1) / 2
+  if (size > maxsize) {
+    print("new biggest")
+    print(index)
+  }
+  maxsize <- max(maxsize, size)
+}
+
+score_df <- data.frame(matrix(ncol = (maxsize*2)+1, nrow = length(score_history)))
+base_matrix <- matrix(ncol = maxsize, nrow = length(score_history))
+for (index in time_indices$Index) {
+  score <- score_history[[index]]
+  n <- (length(score) - 1) / 2
+  #write to score matrix
+  score_df[index, 1] <- score[1]
+  score_df[index, 2:(n + 1)] <- score[1, 2:(n + 1)]
+  score_df[index, (2 + maxsize):(1 + maxsize + n)] <- score[(2 + n):(1 + 2*n)]
+  
+  #write to base matrix
+  base_matrix[index, 1:n] <- seq(30, -30, length.out=n)
+  if (n < maxsize) {
+    base_matrix[index, (n+1):maxsize] <- 0
+    }
+  
+}
+#phase 3 - calculate elo
+osu_ratings_m3 <- NULL
+base_vec <- seq(30, -30, length.out=maxsize)
+ratinggg <- elom(score_df,
+                 nn = maxsize,
+                 base = base_vec,
+                 exact=FALSE)
+
+
+for (index in time_indices$Index) {
+  scorevec <- score_history[[index]]
+  n <- (length(scorevec) - 1) / 2
+  base <- seq(30, -30, length.out=n)
+  # apply elom
+  osu_ratings_m3 <- elom(scorevec, 
+                           nn = n,
+                           base = base, 
+                           status = osu_ratings_m3$ratings,
+                           history = FALSE)
+}
+
+
+
+View(osu_ratings_m3$ratings)
+```
+
+
 
 
 score_history <- arrange(score_history, Time)
