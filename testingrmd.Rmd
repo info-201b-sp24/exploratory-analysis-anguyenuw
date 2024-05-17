@@ -175,17 +175,17 @@ View(osu_ratings_m2$ratings)
 #       add an entry to score_history with timestamp and matrix
 #       add a row to time_indices with timestamp and latest score_history index
 
-#phase 2 - sort score vectors 
+#phase 2 - sort score vectors, calculate elo
 #  sort score history by datetime
-#  create final score history dataframe and base matrix
-
-#phase 3 - calculate elo
-#
-#  iteratively send through elom in temporal order
+#  iteratively send shards through elom in temporal order
+#    send in batches to reduce memory costs
 
 ```{r}
-scores <- read.csv("csvfiles/all_mps.csv") %>%
-          filter(!is.na(User.ID))
+scores <- read.csv("csvfiles/stablever.csv") %>%
+          filter(!is.na(User.ID)) %>%
+          distinct()
+
+# convert Datetimes to Epoch time
 A <- function(x) as.numeric(strptime(x, format="%Y-%m-%d %H:%M:%S", tz="UTC"))
 scores$Datetime <- unlist(lapply(scores$Datetime, A))
 scores <- scores %>% arrange(Datetime)
@@ -196,7 +196,6 @@ time_limit <- 1209600
 
 # shard data by maps
 scores <- scores %>% group_split(Map.ID)
-
 
 score_history <- list()
 time_indices <- data.frame(matrix(ncol = 2, nrow = 0))
@@ -237,47 +236,23 @@ for (map_shard in scores) {
 }
 
 
-# phase 2 - sort score vectors, compile sorted score history
-#           calculate base matrix
+# phase 2 - sort score vectors, calc elo in time order
 time_indices <- time_indices %>% arrange(Datetime)
-maxsize = 0
-# find largest scorevec
-for (index in time_indices$Index) {
-  size <- (length(score_history[[index]]) - 1) / 2
-  if (size > maxsize) {
-    print("new biggest")
-    print(index)
-  }
-  maxsize <- max(maxsize, size)
-}
 
-score_df <- data.frame(matrix(ncol = (maxsize*2)+1, nrow = length(score_history)))
-base_matrix <- matrix(ncol = maxsize, nrow = length(score_history))
-for (index in time_indices$Index) {
-  score <- score_history[[index]]
-  n <- (length(score) - 1) / 2
-  #write to score matrix
-  score_df[index, 1] <- score[1]
-  score_df[index, 2:(n + 1)] <- score[1, 2:(n + 1)]
-  score_df[index, (2 + maxsize):(1 + maxsize + n)] <- score[(2 + n):(1 + 2*n)]
-  
-  #write to base matrix
-  base_matrix[index, 1:n] <- seq(30, -30, length.out=n)
-  if (n < maxsize) {
-    base_matrix[index, (n+1):maxsize] <- 0
-    }
-  
-}
-#phase 3 - calculate elo
 osu_ratings_m3 <- NULL
-base_vec <- seq(30, -30, length.out=maxsize)
-ratinggg <- elom(score_df,
-                 nn = maxsize,
-                 base = base_vec,
-                 exact=FALSE)
-
-
-for (index in time_indices$Index) {
+# manually run in batches to keep down memory costs
+i_range <- 1:100
+i_range <- 101:1000
+i_range <- 1001:2000
+i_range <- 2001:3000
+i_range <- 3001:6000
+i_range <- 6001:9999
+i_range <- 10000:20000
+i_range <- 20001:29999
+i_range <- 30000:44999
+i_range <- 45000:59999
+for (i in i_range) {
+  index = time_indices$Index[i]
   scorevec <- score_history[[index]]
   n <- (length(scorevec) - 1) / 2
   base <- seq(30, -30, length.out=n)
@@ -288,8 +263,6 @@ for (index in time_indices$Index) {
                            status = osu_ratings_m3$ratings,
                            history = FALSE)
 }
-
-
 
 View(osu_ratings_m3$ratings)
 ```
@@ -307,5 +280,4 @@ hist(osu_ratings, history=FALSE, density=FALSE)
 ut <- unique(score_history$Time)
 
 #tourney_elos <- elom(t_history, nn = 16, exact = FALSE, base = c(), )
-
 
