@@ -3,52 +3,112 @@ title: "Exploratory Analysis"
 output: html_document
 ---
 
-## Project title
-
-Give your project a concise, interesting title that summarizes the entirety of your project
+## osu! RME Tournament Rating System
 
 ### Authors
 
-Names of your team members
+Anh-Minh Nguyen (anhngu@uw.edu)
 
 ### Date
 
-Winter 2022
+Spring 2024
 
 ### Abstract
 
-No more than three sentences that summarize your project. Focus on the very most important aspects. For example: (1) "Our main question is .... This question is important because .... To address the question, we will ...." (2) "We are concerned with ..., because .... To address this concern, we plan to ...." (3) "Consider that .... This is important because .... Accordingly, we plan to ...."
+Players of the online rhythm game osu! often question if the official ranking system accurately rates player skill. To explore this, we calculate a Rhythm Metrics Elo (RME) for every active tournament participant in osu! in the year 2023. We then analyze differences between the hierarchy of players in RME rating versus the official rankings. 
 
 ### Keywords
 
-3-5 keywords that summarize your project.
-(e.g., "Keywords: human physiology; bicycle exercise; Gen Z; times-series data")
+Keywords: e-sports; ranking systems; glicko-2; skill-based rating
 
 ### Introduction  
 
-Briefly introduce your project.  Include 3-5 research questions. What motivates the questions? Why are they important? (at least 200 words)
+osu! is a rhythm game with about a million active users and a fairly large tournament community. In osu!, a player plays a "map", a set of notes composed to the beat of a song. Upon completing the map, the player receives a numeric "score" that represents how well they played the map. 
+
+There is an official osu! performance rating system used to rank the skill level of all players. However, as many players notice, the official rating system does not encompass every skill that someone can master in osu!. Tournament play highlights these niche skillsets, offering more varied types of maps to test players on. Most of the best tournament players are indeed in the highest official ranks and vice versa, but some players stand out as especially skilled at either tournament play or singleplayer play.
+
+Some questions I want to answer are:
+- Who are the best tournament players?
+- Are highly ranked players on the official leaderboards similarly highly ranked in tournament performance?
+- Are highly performant players in tournaments similarly highly ranked in the official leaderboards?
+- Is the official osu! ranking system representative of overall skill?
 
 ### Related Work  
 
-Describe your topic and related work in this space. You must include 3 citations to related work (URLs to similar work, high quality articles from the popular press, research papers, etc. ) Please use a standard citation style of your choice. (at least 200 words)
+In this project I will compare scores set by players, but I will also simplify the analysis by only considering "wins", "draws", and "losses", defined as achieving a higher, equal, or lower score as another player in the same match.
+
+This simplification allows me to use ranking systems like Elo, used for zero-sum games like chess, tennis, and other e-sports (Ebtekar) (Moncav). In particular, I want to use the Glicko-2 rating system, which incorporates "rating deviation" that specifies how confident the rating system is in the player's true rating (Glickman).  
+
+Ebtekar, A., & Liu, P. (2021). Elo-MMR: A rating system for massive multiplayer competitions. Proceedings of the Web Conference 2021. https://doi.org/10.1145/3442381.3450091 
+
+Glickman, M. E. (2022, March 22). Example of the glicko-2 system. http://www.glicko.net/glicko/glicko2.pdf 
+
+Moncav, M. (2020, March 6). What is elo? an explanation for competitive gaming’s Hidden Rating System. Dot Esports. https://dotesports.com/general/news/elo-ratings-explained-20565 
 
 ### The Dataset
 
-Where did you find the data? Please include a link to the data source  
+Where did you find the data? Please include a link to the data source
 Who collected the data?  
+
+I gathered my data by querying the osu! API ([link to documentation](https://osu.ppy.sh/docs/index.html)).
+
 How was the data collected or generated?  
+
+To collect data on player scores, I first found the first and last tournament matches held in 2023. These are approximately match ID [105988619](https://osu.ppy.sh/community/matches/105988619) and match ID [111977659](https://osu.ppy.sh/community/matches/111977659). Then, I queried the osu! API for every match ID in this range, and filtered out all multiplayer games that weren't a tournament match. I then extracted all match data 
+
 Why was the data collected?  
-How many observations (rows) are in your data?  
-How many features (columns) are in the data?  
+
+I collected this data for use in this project.
+
+Explaining the datasets
+
+There are two tables of data. The first, **Scores**, records all scores set in tournament matches in the year 2023. The second, **Players**, records information about each player who appears in **Scores**, including their official rank, calculated RME rating, and country. 
+
+Data collection is about 75% complete. Currently, there are slightly over 1,120,000 observations in the **Scores** dataset, and about 15,000 observations in the **Players** dataset.
+
+There are 8 features in the Scores dataset:
+- Match ID - the ID number of the tournament match (integer)
+- Tourney Abbreviation - a string representing the tourney this match was part of
+- Datetime - when the map was played (expressed in UTC)
+- Map ID - what map was played (integer)
+- Player ID - who played this map (integer)
+- Username - who played this map (string), accessed during data collection
+- Mods - what ingame modifications the player had active during the map (enum)
+- Score - what score the player achieved (integer from 0 to 1,250,000)
+
+There are 6 features in the Players dataset:
+- Player ID - a player's ID 
+- Username - this player's username, accessed on [[[DATETIME]]]
+- Global rank - this player's official rank, accessed on [[[DATETIME]]] (integer)
+- Performance points - this player's official performance score, accessed on [[[DATETIME]]] (float)
+- RME Rating - this player's RME rating (float)
+- Location - the country displayed on this player's profile (enum: ISO 3166-1 alpha-2 code)
+
 What, if any, ethical questions or questions of power do you need to consider when working with this data?  
 What are possible limitations or problems with this data?   (at least 200 words)
 
+One limitation of this data is that I only processed tournament matches that happened in 2023. A more extensive rating system would tally matches across several years, but I only have time to query the osu! API for one year's worth of matches. 
+
+A large problem that I will need to address is the fact that not all maps played in a tournament match are actually part of the match. Players will often be allowed to play a "warm-up" map before the match, which is still logged in the match history. Players can also play maps after the match is over, which is also logged in the match history. I will need to somehow clean both of these from my dataset.
+
 ### Implications
 
-Assuming you answer your research questions, briefly describe the expected or possible implications for technologists, designers, and policymakers. (at least 150 words)
+Finding discrepancies between players' global ranks and tournament performance could inform the development team at osu! about what skillsets may be undervalued in the official rating system.
 
 ### Limitations & Challenges
-What challenges or limitations might you need to address with your project idea more broadly? Briefly discuss. (at least 150 words)
+
+A fundamental limitation of applying an Elo model to osu! is that, in team-based tournaments, a player is free to not play a map, so if they don't want to play a map, they can have their teammates fill in. This means that a player can always play to their strengths. A hypothetical player who always plays well on a single type of map and never plays any other map could theoretically top the rankings, despite most of the commonly accepted "best tournament players" having well-rounded skillsets.
+
+Data cleaning and preparation were the bulk of the work in this project. I filtered out these conditions while building my dataset:
+- Separating tournament matches from other multiplayer matches
+- Some maps which were not part of a match, e.g. warm-ups, tiebreaker showcases
+- Matches which had zero maps played
+- Maps played by only a single player
+- Maps which have been deleted from the osu! server
+
+
+
+I'm not sure if I can perfectly detect all eligible maps played in all tournament matches. I'll also need to consider any adjustments to the Glicko-2 rating system when parsing my player data. Glicko-2 ratings are only defined for a set of players who could all play each other, but many osu! players will only play in rank-restricted tournaments, where they only play against other players of a similar official rank (for example, players from global rank 10,000 to rank 50,000).
 
 ### Summary Information
 
