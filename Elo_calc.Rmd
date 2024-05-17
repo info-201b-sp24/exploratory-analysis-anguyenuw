@@ -15,7 +15,7 @@ library("PlayerRatings")
 library("dplyr")
 setwd("C:/Users/mrche/info201/exploratory-analysis-anguyenuw")
 
-f <- read.csv("csvfiles/testing.csv")
+f <- read.csv("csvfiles/p02dataset.csv")
 ocl_w23_withq <- read.csv("csvfiles/ocl_w23_withq.csv")
 all_mps <- read.csv("csvfiles/all_mps.csv") %>%
           filter(!is.na(User.ID))
@@ -181,7 +181,7 @@ View(osu_ratings_m2$ratings)
 #    send in batches to reduce memory costs
 
 ```{r}
-scores <- read.csv("csvfiles/stablever.csv") %>%
+scores <- read.csv("csvfiles/p02dataset.csv") %>%
           filter(!is.na(User.ID)) %>%
           distinct()
 
@@ -229,8 +229,8 @@ for (map_shard in scores) {
     players_and_scores[1, 2:(1 + n)] <- map_scores$Username
     players_and_scores[1, (2 + n):(1 + 2*n)] <- map_scores$Score
     
-    index = length(score_history) + 1
-    score_history[[index]] = players_and_scores
+    index <- length(score_history) + 1
+    score_history[[index]] <- players_and_scores
     time_indices <- time_indices %>% add_row(Datetime=time, Index=index)
   }
 }
@@ -241,19 +241,23 @@ time_indices <- time_indices %>% arrange(Datetime)
 
 osu_ratings_m3 <- NULL
 # manually run in batches to keep down memory costs
-i_range <- 1:100
-i_range <- 101:1000
-i_range <- 1001:2000
-i_range <- 2001:3000
-i_range <- 3001:6000
-i_range <- 6001:9999
-i_range <- 10000:20000
-i_range <- 20001:29999
-i_range <- 30000:44999
-i_range <- 45000:59999
-i_range <- 60000:74999
-i_range <- 75000:86875
-for (i in i_range) {
+i_ranges <- list(1:99, 100:999, 1000:4999, 5000:9999, 10000:19999, 20000:34999, 
+                 35000:49999, 50000:64999, 65000:79999, 80000:94999, 95000:106975)
+i_ranges[[length(i_ranges) + 1]] <- (1000:length(time_indices$Datetime))
+#i_range <- 1:100
+#i_range <- 101:1000
+#i_range <- 1001:2000
+#i_range <- 2001:3000
+#i_range <- 3001:6000
+#i_range <- 6001:9999
+#i_range <- 10000:20000
+#i_range <- 20001:29999
+#i_range <- 30000:44999
+#i_range <- 45000:59999
+#i_range <- 60000:74999
+#i_range <- 75000:89999
+#i_range <- 
+for (i in i_ranges[[12]]) {
   index = time_indices$Index[i]
   scorevec <- score_history[[index]]
   n <- (length(scorevec) - 1) / 2
@@ -265,6 +269,7 @@ for (i in i_range) {
                            status = osu_ratings_m3$ratings,
                            history = FALSE)
 }
+
 
 View(osu_ratings_m3$ratings)
 ```

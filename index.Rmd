@@ -64,7 +64,7 @@ Explaining the datasets
 
 There are two tables of data. The first, **Scores**, records all scores set in tournament matches in the year 2023. The second, **Players**, records information about each player who appears in **Scores**, including their official rank, calculated RME rating, and country. 
 
-Data collection is about 75% complete. Currently, there are slightly over 1,120,000 observations in the **Scores** dataset, and about 15,000 observations in the **Players** dataset.
+Data collection is about 60% complete. Currently, there are slightly over 1,140,000 observations in the **Scores** dataset, and about 15,000 observations in the **Players** dataset.
 
 There are 8 features in the Scores dataset:
 - Match ID - the ID number of the tournament match (integer)
