@@ -158,8 +158,11 @@ async def scrape_all():
     # range history
     # 106002000, 106026500, 106051000, 106075500, 106090600
     # 106090600, 106470600, 106850600, 107230600, 107610600, 107978000
-    start_id = 107970000
-    end_id =   107978000
+    # 108317000, 108655500, 108994000, 109332500, 109671000, 110000000
+    # crashed, need to start from borders
+    #       108495608, 108834130, 109171244, 109510534, 109848136
+    start_id = 109848136
+    end_id =   110000000
     overwrite = False
     dest = "csvfiles/all_mps.csv"
     logdest = "csvfiles/id_abbrs.csv"
