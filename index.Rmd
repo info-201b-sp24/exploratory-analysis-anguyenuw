@@ -54,7 +54,7 @@ I gathered my data by querying the osu! API ([link to documentation](https://osu
 
 How was the data collected or generated?  
 
-To collect data on player scores, I first found the first and last tournament matches held in 2023. These are approximately match ID [105988619](https://osu.ppy.sh/community/matches/105988619) and match ID [111977659](https://osu.ppy.sh/community/matches/111977659). Then, I queried the osu! API for every match ID in this range, and filtered out all multiplayer games that weren't a tournament match. I then extracted all match data 
+To collect data on player scores, I first approximated the first and last tournament matches held in 2023. I found match IDs [105988619](https://osu.ppy.sh/community/matches/105988619) and [111977659](https://osu.ppy.sh/community/matches/111977659). Then, I queried the osu! API for every match ID in this range, added 20,000 IDs on either side, and filtered out various undesired data (see Limitations and Challenges). I then wrote each score to a .csv file. 
 
 Why was the data collected?  
 
@@ -89,7 +89,9 @@ What are possible limitations or problems with this data?   (at least 200 words)
 
 One limitation of this data is that I only processed tournament matches that happened in 2023. A more extensive rating system would tally matches across several years, but I only have time to query the osu! API for one year's worth of matches. 
 
-A large problem that I will need to address is the fact that not all maps played in a tournament match are actually part of the match. Players will often be allowed to play a "warm-up" map before the match, which is still logged in the match history. Players can also play maps after the match is over, which is also logged in the match history. I will need to somehow clean both of these from my dataset.
+A large problem that I mostly addressed is the fact that not all maps played in a tournament match are actually part of the match. Players will often play a "warm-up" map before the match, which is logged in the match history. Players can also play maps after the match is over, which is also logged in the match history. I cleaned most occurences of these by analyzing the amount of players who played each map.
+
+Finally, I improperly used concurrent processes in my API scraper program, so a few dozen rows in my Scores dataset were overwritten by other scraper processes. Later, I will fill in these corrupted rows by manually parsing the relevant multiplayer lobbies. For now, I have omitted these rows by filtering out incomplete rows in my analysis.
 
 ### Implications
 
