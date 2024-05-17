@@ -251,6 +251,8 @@ i_range <- 10000:20000
 i_range <- 20001:29999
 i_range <- 30000:44999
 i_range <- 45000:59999
+i_range <- 60000:74999
+i_range <- 75000:86875
 for (i in i_range) {
   index = time_indices$Index[i]
   scorevec <- score_history[[index]]
