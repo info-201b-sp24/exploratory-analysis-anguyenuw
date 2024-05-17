@@ -53,6 +53,7 @@ async def scrape_known_mps():
     owc_23 = (111534249,111554331,111555364,111451190,111457054,111460173,111466879,111349795,111350765,111352735,111356742,111360796,111366414,111368903,111372515,111253985,111256134,111256976,111257938,111258934,111260018,111260487,111261974,111265019,111271525,111272312,111273436,111273441,111274743,111276018,111278789,111152642,111165133,111167951,111168903,111170809,111170821,111171785,111178942,111178945,111183369,111183363,111183770,111184163,111184941,111187488,111188366,111062319,111063878,111072298,111073334,111073335,111081251,111083508,111083501,111084580,111085330,111085320,111085343,111086282,111086205,111087337,111091065)
     match = None
     overwrite = True
+    mania = (106116075, 11111111)
     dest = "csvfiles/garbage.csv"
     #logdest = "csvfiles/id_abbreviations.csv"
     if overwrite: 
@@ -65,7 +66,7 @@ async def scrape_known_mps():
                         "Username", 
                         "Mods", 
                         "Score"))
-    for i in owc_23:
+    for i in mania:
         try:
             match_response = await api.match(i)
         except Exception:
@@ -83,6 +84,7 @@ async def scrape_known_mps():
         fid = match_response.first_event_id
         lid = match_response.latest_event_id
         events = match_response.events
+        
         print(f"match id {i}")
         #print([user.username for user in users])
         user_dict = dict()
@@ -128,6 +130,7 @@ async def scrape_known_mps():
 
         # second pass - for each map, for each score, write a csv row about that score 
         #     skip any maps with unusual player counts
+        #     skip any maps played with non-osu gamemodes
         for event in all_events:
             # if not event.detail.type == MatchEventType.OTHER:
             #     # print("hey")
@@ -136,6 +139,8 @@ async def scrape_known_mps():
             eid = event.id
             etime = event.timestamp
             teamtype = event.game.team_type
+            mode = game.mode
+            if not mode == GameMode.OSU: continue
             bm = game.beatmap
             if not bm: continue
             bm_id = game.beatmap_id
@@ -198,6 +203,9 @@ async def scrape_all():
             users = match_response.users
             fid = match_response.first_event_id
             events = match_response.events
+
+
+
             if (i%20 == 0): print(f"match id {i} success")
             user_dict = dict()
             for user in users:
@@ -239,9 +247,11 @@ async def scrape_all():
 
             # second pass - for each map, for each score, write a csv row about that score 
             #     skip any maps with unusual player counts
+            #     skip any maps with non-osu gamemodes
             for event in all_events:
                 game = event.game
                 etime = event.timestamp
+                if not game.mode == GameMode.OSU: continue
                 bm = game.beatmap
                 if not bm: continue
                 bm_id = game.beatmap_id
@@ -292,4 +302,4 @@ async def write_csv(obj, filename):
         writer.writerow(obj)
         
 
-asyncio.run(scrape_all())
+asyncio.run(scrape_known_mps())

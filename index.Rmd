@@ -102,12 +102,16 @@ Finding discrepancies between players' global ranks and tournament performance c
 A fundamental limitation of applying an Elo model to osu! is that, in team-based tournaments, a player is free to not play a map, so if they don't want to play a map, they can have their teammates fill in. This means that a player can always play to their strengths. A hypothetical player who always plays well on a single type of map and never plays any other map could theoretically top the rankings, despite most of the commonly accepted "best tournament players" having well-rounded skillsets.
 
 Data cleaning and preparation were the bulk of the work in this project. I filtered out these conditions while building my dataset:
-- Separating tournament matches from other multiplayer matches
+- Matches that weren't tournament matches
 - Some maps which were not part of a match, e.g. warm-ups, tiebreaker showcases
 - Matches which had zero maps played
-- Maps played by only a single player
 - Maps which have been deleted from the osu! server
+- Maps not played in the osu! standard gamemode
 
+When calculating player ratings, I also filtered out these conditions:
+- Maps played by only a single player
+- Duplicated rows
+- Malformed rows
 
 
 I'm not sure if I can perfectly detect all eligible maps played in all tournament matches. I'll also need to consider any adjustments to the Glicko-2 rating system when parsing my player data. Glicko-2 ratings are only defined for a set of players who could all play each other, but many osu! players will only play in rank-restricted tournaments, where they only play against other players of a similar official rank (for example, players from global rank 10,000 to rank 50,000).
