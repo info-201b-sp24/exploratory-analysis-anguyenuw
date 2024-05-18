@@ -1,6 +1,7 @@
 import constants
 import asyncio
 import time
+import sys
 import re
 import sqlite3
 import csv
@@ -9,7 +10,7 @@ import traceback
 from time import sleep
 from constants import *
 from ossapi import OssapiAsync, UserLookupKey, GameMode, RankingType, MatchEventType, BeatmapsetCompact, Ossapi
-
+from ossapi import User
 
 api = OssapiAsync(CLIENT_ID, API_KEY)
 aapi = Ossapi(CLIENT_ID, API_KEY)
@@ -166,19 +167,23 @@ async def scrape_all():
     # 108317000, 108655500, 108994000, 109332500, 109671000, 110000000
     # crashed, need to start from borders
     #       108495608, 108834130, 109171244, 109510534, 109848136
-    start_id = 109848136
-    end_id =   110000000
+
+    # new range history with filtering
+    # 105970000, 106275000, 106580000, 106885000, 107190000, 107500000, 
+    # 106190400, 106494900, 106799500, 107104300, 107410500
+    start_id = 107190000
+    end_id =   107500000
     overwrite = False
-    dest = "csvfiles/all_mps.csv"
-    logdest = "csvfiles/id_abbrs.csv"
+    dest = "csvfiles/all_only_osu.csv"
+    logdest = "csvfiles/id_abbrs_osu.csv"
     # if overwrite: 
     #     with open(dest, "w", newline='') as f:
     #         writer = csv.writer(f)
-    #         writer.writerow(("Match ID", 
-    #                     "Tourney Abbreviation",
+    #         writer.writerow(("MatchID", 
+    #                     "TourneyAbbreviation",
     #                     "Datetime", 
-    #                     "Map ID", 
-    #                     "User ID", 
+    #                     "MapID", 
+    #                     "UserID", 
     #                     "Username", 
     #                     "Mods", 
     #                     "Score"))
@@ -273,6 +278,62 @@ async def scrape_all():
                 traceback.print_exc(file=f)
         
 
+async def gather_players(mod):
+    i = 0
+    dest = f"csvfiles/user_data_{mod}.csv"
+    overwrite = True
+    if overwrite: 
+        line = ("UserID", 
+                        "Username",
+                        "GlobalRank", 
+                        "PP", 
+                        "RME", 
+                        "Location")
+        await write_csv(line, dest, mode="w")
+    prev_time = datetime.datetime.now()
+    with open("csvfiles/all_player_ids.csv", "r", newline='', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            i += 1
+            if not (i%7 == mod):
+                continue
+            for attempt in range(10):
+                try:
+                    #time.sleep(0.3)
+                    id = int(row[0])
+
+                    user_obj = await api.user(id, mode=GameMode.OSU, key=UserLookupKey.ID)
+                    user_stats = user_obj.statistics
+
+                    # username = user_obj.username
+                    # global_rank = user_stats.global_rank
+                    # pp = user_stats.pp
+                    # location = user_obj.country.name
+
+                    #print(f"{id} is {username}, rank {global_rank} with pp {pp}, located in {location}")
+                    line = (id, 
+                                user_obj.username, 
+                                user_stats.global_rank, 
+                                user_stats.pp, 
+                                "", 
+                                user_obj.country.name)
+                    await write_csv(line, dest)
+                    if (i%200 == 0):
+                        time = datetime.datetime.now()
+                        print(f"process {mod} id {i} : took {time - prev_time}")
+                        prev_time = time
+                except ValueError:
+                    pass
+                except Exception:
+                    time.sleep(0.2)
+                break
+
+
+            
+
+
+
+
 async def test():
     idsids = (106688657,106688649,106684920,106647595,
               106669944,106682522,106684444,106643259,
@@ -292,14 +353,32 @@ async def test():
     with open('known_IDs.txt','w') as f:
         f.write(str({1,3,(3,5)}))  # set of numbers & a tuple
 
-
-
-async def write_csv(obj, filename):
+async def write_csv(obj, filename, mode="a"):
     # TODO: use append mode for multiple sessions
-    with open(filename, "a", newline='', encoding='utf-8') as f:
+    with open(filename, mode, newline='', encoding='utf-8') as f:
 
         writer = csv.writer(f)
         writer.writerow(obj)
         
 
-asyncio.run(scrape_known_mps())
+#asyncio.run(gather_players())
+
+
+
+async def main(args):
+    func = sys.argv[1]
+    if func == "scrape_all":
+        print('hey')
+    elif func == "scrape_users":
+        async with asyncio.TaskGroup() as tg:
+            task0 = tg.create_task(gather_players(0))
+            task1 = tg.create_task(gather_players(1))
+            task2 = tg.create_task(gather_players(2))
+            task3 = tg.create_task(gather_players(3))
+            task4 = tg.create_task(gather_players(4))
+            task5 = tg.create_task(gather_players(5))
+            task6 = tg.create_task(gather_players(6))
+        print("hey2")
+
+if __name__ == "__main__":
+    asyncio.run(main(sys.argv))            
