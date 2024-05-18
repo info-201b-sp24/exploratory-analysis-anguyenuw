@@ -160,7 +160,7 @@ async def scrape_known_mps():
                 await write_csv(line, dest)
     pass
 
-async def scrape_all():
+async def scrape_all(mod):
     # range history
     # 106002000, 106026500, 106051000, 106075500, 106090600
     # 106090600, 106470600, 106850600, 107230600, 107610600, 107978000
@@ -171,117 +171,118 @@ async def scrape_all():
     # new range history with filtering
     # 105970000, 106275000, 106580000, 106885000, 107190000, 107500000, 
     # 106190400, 106494900, 106799500, 107104300, 107410500
+
+    # new range history with multiprocessing
+    #
     start_id = 107190000
     end_id =   107500000
-    overwrite = False
-    dest = "csvfiles/all_only_osu.csv"
-    logdest = "csvfiles/id_abbrs_osu.csv"
-    # if overwrite: 
-    #     with open(dest, "w", newline='') as f:
-    #         writer = csv.writer(f)
-    #         writer.writerow(("MatchID", 
-    #                     "TourneyAbbreviation",
-    #                     "Datetime", 
-    #                     "MapID", 
-    #                     "UserID", 
-    #                     "Username", 
-    #                     "Mods", 
-    #                     "Score"))
+    overwrite = True
+    dest = f"csvfiles/mp_data/all_mps_{mod}.csv"
+    logdest = f"csvfiles/id_abbrs_osu_{mod}.csv"
+    if overwrite: 
+        with open(dest, "w", newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(("MatchID", 
+                        "TourneyAbbreviation",
+                        "Datetime", 
+                        "MapID", 
+                        "UserID", 
+                        "Username", 
+                        "Mods", 
+                        "Score"))
     prev_time = datetime.datetime.now()
     for i in range(start_id, end_id):
-        try:
-            #time.sleep(.08)
-            match_response = await api.match(i)
-        except Exception:
-            if (i%100 == 0): 
-                time = datetime.datetime.now()
-                print(f"id {i} fail : 100 took {time - prev_time}")
-                prev_time = time
-
+        if not (i%6 == mod):
             continue
-        try:
-            valid_match = re.fullmatch(tourney_re, match_response.match.name) != None
-            if not valid_match: continue
-            
-            abbr = (match_response.match.name[0:match_response.match.name.find(":")]).strip()
-            await write_csv((abbr, i), logdest)
-            users = match_response.users
-            fid = match_response.first_event_id
-            events = match_response.events
+        for attempt in range(10):
+            try:
+                match_response = await api.match(i)
+                match_name = match_response.match.name
+                valid_match = re.fullmatch(tourney_re, match_name) != None
+                if not valid_match: break
+                if (i%40 == 0): print(f"match id {i} success")
 
+                abbr = (match_name[0:match_name.find(":")]).strip()
+                await write_csv((abbr, i), logdest)
 
-
-            if (i%20 == 0): print(f"match id {i} success")
-            user_dict = dict()
-            for user in users:
-                user_dict[user.id] = user.username
-
-            # gather all of the maps played in this match
-            lowest = 999999999999
-            all_events = list()
-            for event in events:
-                lowest = min(lowest, event.id)
-                if event.detail.type == MatchEventType.OTHER:
-                    all_events.append(event)
-            while lowest > fid:
-                new_match_response = aapi.match(i, before=lowest)
-                for user in new_match_response.users:
+                fid = match_response.first_event_id
+                events = match_response.events
+                users = match_response.users
+                user_dict = dict()
+                for user in users:
                     user_dict[user.id] = user.username
-                more_events = new_match_response.events
-                for event in more_events:
+
+                # gather all of the maps played in this match
+                lowest = 999999999999
+                all_events = list()
+                for event in events:
+                    lowest = min(lowest, event.id)
                     if event.detail.type == MatchEventType.OTHER:
                         all_events.append(event)
-                    lowest = min(lowest, event.id)
+                while lowest > fid:
+                    new_match_response = aapi.match(i, before=lowest)
+                    for user in new_match_response.users:
+                        user_dict[user.id] = user.username
+                    more_events = new_match_response.events
+                    for event in more_events:
+                        if event.detail.type == MatchEventType.OTHER:
+                            all_events.append(event)
+                        lowest = min(lowest, event.id)
 
-            # skip if no maps were played
-            if not all_events: continue
+                # skip if no maps were played
+                if not all_events: break
 
-            # first pass - find the most common amount of players per map
-            playercounts = dict()
-            for event in all_events:
-                if not event.detail.type == MatchEventType.OTHER: continue
-                num_players = len(event.game.scores)
-                if num_players not in playercounts:
-                    playercounts[num_players] = 0
-                playercounts[num_players] += 1
-                #print(playercounts)
+                # first pass - find the most common amount of players per map
+                playercounts = dict()
+                for event in all_events:
+                    if not event.detail.type == MatchEventType.OTHER: continue
+                    num_players = len(event.game.scores)
+                    if num_players not in playercounts:
+                        playercounts[num_players] = 0
+                    playercounts[num_players] += 1
+                most_common_player_count = max(playercounts, key=playercounts.get)
+
+                # second pass - for each map, for each score, write a csv row about that score 
+                #     skip any maps with unusual player counts
+                #     skip any maps with non-osu gamemodes
+                for event in all_events:
+                    if not game.mode == GameMode.OSU: continue
+                    bm = game.beatmap
+                    if not bm: continue
+                    game = event.game
+                    if not len(game.scores) == most_common_player_count: continue
+                    etime = event.timestamp
+                    bm_id = game.beatmap_id
+                    for score in game.scores:
+                        line = (i, 
+                                abbr, 
+                                etime, 
+                                bm_id, 
+                                score.user_id, 
+                                user_dict[score.user_id], 
+                                score.mods, 
+                                score.score)
+                        await write_csv(line, dest)
+            except ValueError:
+                if (i%200 == 0): 
+                    time = datetime.datetime.now()
+                    print(f"id {i} process {mod} fail : took {time - prev_time}")
+                    prev_time = time
+                break
+            except ConnectionError:
+                continue
+            except Exception:
+                with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
+                    print(f"something went wrong id {i} process {mod}", file=f)
+                    print("\nERROR: \n", file=f)
+                    traceback.print_exc(file=f)
             
-            most_common_player_count = max(playercounts, key=playercounts.get)
-            #print(f"most common: {most_common_player_count}")
-                
-
-            # second pass - for each map, for each score, write a csv row about that score 
-            #     skip any maps with unusual player counts
-            #     skip any maps with non-osu gamemodes
-            for event in all_events:
-                game = event.game
-                etime = event.timestamp
-                if not game.mode == GameMode.OSU: continue
-                bm = game.beatmap
-                if not bm: continue
-                bm_id = game.beatmap_id
-                if not len(game.scores) == most_common_player_count: continue
-                for score in game.scores:
-                    line = (i, 
-                            abbr, 
-                            etime, 
-                            bm_id, 
-                            score.user_id, 
-                            user_dict[score.user_id], 
-                            score.mods, 
-                            score.score)
-                    await write_csv(line, dest)
-        except Exception:
-            with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
-                print(f"something went wrong id {i}", file=f)
-                print("\nERROR: \n", file=f)
-                traceback.print_exc(file=f)
         
 
 async def gather_players(mod):
     i = 0
-    dest = f"csvfiles/user_data_{mod}.csv"
-    overwrite = True
+    dest = f"csvfiles/user_data/user_data_{mod}.csv"
+    overwrite = False
     if overwrite: 
         line = ("UserID", 
                         "Username",
@@ -299,18 +300,9 @@ async def gather_players(mod):
                 continue
             for attempt in range(10):
                 try:
-                    #time.sleep(0.3)
                     id = int(row[0])
-
                     user_obj = await api.user(id, mode=GameMode.OSU, key=UserLookupKey.ID)
                     user_stats = user_obj.statistics
-
-                    # username = user_obj.username
-                    # global_rank = user_stats.global_rank
-                    # pp = user_stats.pp
-                    # location = user_obj.country.name
-
-                    #print(f"{id} is {username}, rank {global_rank} with pp {pp}, located in {location}")
                     line = (id, 
                                 user_obj.username, 
                                 user_stats.global_rank, 
@@ -323,10 +315,11 @@ async def gather_players(mod):
                         print(f"process {mod} id {i} : took {time - prev_time}")
                         prev_time = time
                 except ValueError:
-                    pass
+                    break
                 except Exception:
                     time.sleep(0.2)
-                break
+                else:
+                    break
 
 
             
@@ -363,7 +356,9 @@ async def write_csv(obj, filename, mode="a"):
 
 #asyncio.run(gather_players())
 
-
+async def testing():
+    match_response = await api.match(106534250)
+    print(match_response.users[0].username)
 
 async def main(args):
     func = sys.argv[1]
@@ -379,6 +374,9 @@ async def main(args):
             task5 = tg.create_task(gather_players(5))
             task6 = tg.create_task(gather_players(6))
         print("hey2")
+    elif func == "testing":
+        await testing()
+
 
 if __name__ == "__main__":
     asyncio.run(main(sys.argv))            
