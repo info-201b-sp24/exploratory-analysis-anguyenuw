@@ -173,12 +173,13 @@ async def scrape_all(mod):
     # 106190400, 106494900, 106799500, 107104300, 107410500
 
     # new range history with multiprocessing
-    #
-    start_id = 107190000
-    end_id =   107500000
+    # 105970000 
+    # 107000000
+    start_id = 105970000
+    end_id =   107000000
     overwrite = True
     dest = f"csvfiles/mp_data/all_mps_{mod}.csv"
-    logdest = f"csvfiles/id_abbrs_osu_{mod}.csv"
+    logdest = f"csvfiles/mp_data/id_abbrs_osu_{mod}.csv"
     if overwrite: 
         with open(dest, "w", newline='') as f:
             writer = csv.writer(f)
@@ -191,8 +192,9 @@ async def scrape_all(mod):
                         "Mods", 
                         "Score"))
     prev_time = datetime.datetime.now()
+    match_name = "hey"
     for i in range(start_id, end_id):
-        if not (i%6 == mod):
+        if not (i%7 == mod):
             continue
         for attempt in range(10):
             try:
@@ -200,7 +202,7 @@ async def scrape_all(mod):
                 match_name = match_response.match.name
                 valid_match = re.fullmatch(tourney_re, match_name) != None
                 if not valid_match: break
-                if (i%40 == 0): print(f"match id {i} success")
+                if (i%50 == 0): print(f"match id {i} success")
 
                 abbr = (match_name[0:match_name.find(":")]).strip()
                 await write_csv((abbr, i), logdest)
@@ -211,7 +213,6 @@ async def scrape_all(mod):
                 user_dict = dict()
                 for user in users:
                     user_dict[user.id] = user.username
-
                 # gather all of the maps played in this match
                 lowest = 999999999999
                 all_events = list()
@@ -246,10 +247,10 @@ async def scrape_all(mod):
                 #     skip any maps with unusual player counts
                 #     skip any maps with non-osu gamemodes
                 for event in all_events:
+                    game = event.game
                     if not game.mode == GameMode.OSU: continue
                     bm = game.beatmap
                     if not bm: continue
-                    game = event.game
                     if not len(game.scores) == most_common_player_count: continue
                     etime = event.timestamp
                     bm_id = game.beatmap_id
@@ -264,18 +265,23 @@ async def scrape_all(mod):
                                 score.score)
                         await write_csv(line, dest)
             except ValueError:
-                if (i%200 == 0): 
+                #print(f"id {i} process {mod} no")
+                if (i%300 == 0): 
                     time = datetime.datetime.now()
                     print(f"id {i} process {mod} fail : took {time - prev_time}")
                     prev_time = time
                 break
             except ConnectionError:
+                print(f"Lol")
                 continue
             except Exception:
+                print(f"PROBLEM {id}")
                 with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
-                    print(f"something went wrong id {i} process {mod}", file=f)
-                    print("\nERROR: \n", file=f)
+                    print(f"\n{datetime.datetime.now()} something went wrong id {i} process {mod}", file=f)
+                    print("ERROR: \n", file=f)
                     traceback.print_exc(file=f)
+            else:
+                break
             
         
 
@@ -365,7 +371,14 @@ async def testing():
 async def main(args):
     func = sys.argv[1]
     if func == "scrape_all":
-        print('hey')
+        async with asyncio.TaskGroup() as tg:
+            task0 = tg.create_task(scrape_all(0))
+            task1 = tg.create_task(scrape_all(1))
+            task2 = tg.create_task(scrape_all(2))
+            task3 = tg.create_task(scrape_all(3))
+            task4 = tg.create_task(scrape_all(4))
+            task5 = tg.create_task(scrape_all(5))
+            task6 = tg.create_task(scrape_all(6))
     elif func == "scrape_users":
         async with asyncio.TaskGroup() as tg:
             task0 = tg.create_task(gather_players(0))
