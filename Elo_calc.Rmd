@@ -181,13 +181,14 @@ View(osu_ratings_m2$ratings)
 #    send in batches to reduce memory costs
 
 ```{r}
-scores <- read.csv("csvfiles/p02dataset.csv") %>%
+scores_raw 
+scores_raw <- read.csv("csvfiles/p02dataset.csv") %>%
           filter(!is.na(User.ID)) %>%
           distinct()
 
 # convert Datetimes to Epoch time
 A <- function(x) as.numeric(strptime(x, format="%Y-%m-%d %H:%M:%S", tz="UTC"))
-scores$Datetime <- unlist(lapply(scores$Datetime, A))
+scores$Datetime <- unlist(lapply(scores_raw$Datetime, A))
 scores <- scores %>% arrange(Datetime)
 
 # expressed in seconds
@@ -226,7 +227,7 @@ for (map_shard in scores) {
     #score_vec <- map_scores$Score
     
     players_and_scores[1, 1] <- time
-    players_and_scores[1, 2:(1 + n)] <- map_scores$Username
+    players_and_scores[1, 2:(1 + n)] <- map_scores$User.ID
     players_and_scores[1, (2 + n):(1 + 2*n)] <- map_scores$Score
     
     index <- length(score_history) + 1
@@ -276,15 +277,28 @@ View(osu_ratings_m3$ratings)
 
 
 
+# gathering all players
+```{r}
+all_player_ids <- scores_raw %>% 
+  select(User.ID) %>% 
+  unique() %>% 
+  unlist(use.names = FALSE)
 
-score_history <- arrange(score_history, Time)
+write.csv(all_player_ids, "csvfiles/all_player_ids.csv", row.names = FALSE)
+
+# see scraper.py/gather_players
+
+player_data <- read.csv("csvfiles/user_data - Copy.csv")
+ratings_with_userid <- player_ratings
 
 
-osu_ratings <- elom(score_history, nn = max_players, exact = FALSE, base = base2, history = TRUE)
+# fill in RME ratings
+player_data <- player_data %>%
+  left_join(ratings_with_userid, by = join_by(Username == Player)) %>%
+  mutate(RME = Rating) %>%
+  select(UserID, Username, GlobalRank, PP, RME, Location)
 
-hist(osu_ratings, history=FALSE, density=FALSE)
+player_data %>% select(UserID, Username, GlobalRank, PP, RME, Location)
+```
 
-ut <- unique(score_history$Time)
-
-#tourney_elos <- elom(t_history, nn = 16, exact = FALSE, base = c(), )
 
