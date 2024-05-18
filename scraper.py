@@ -281,7 +281,7 @@ async def scrape_all(mod):
 
 async def gather_players(mod):
     i = 0
-    dest = f"csvfiles/user_data/user_data_{mod}.csv"
+    dest = f"csvfiles/user_data_new/user_data_{mod}.csv"
     overwrite = False
     if overwrite: 
         line = ("UserID", 
@@ -315,8 +315,10 @@ async def gather_players(mod):
                         print(f"process {mod} id {i} : took {time - prev_time}")
                         prev_time = time
                 except ValueError:
+                    print(f"User {row[0]} not found")
                     break
-                except Exception:
+                except Exception as e:
+                    print(f"Error {e}")
                     time.sleep(0.2)
                 else:
                     break
