@@ -268,5 +268,11 @@ player_data <- player_data %>%
 player_data <- player_data %>%
   filter((!is.na(RME)) & (!is.na(GlobalRank))) 
 
+# append ordinal rankings by RME
+player_data <- player_data %>%
+  arrange(desc(RME)) %>%
+  mutate(RMERanking = 1:length(player_data$UserID), .after=RME)
+
+
 write.csv(player_data, "csvfiles/user_data/users_with_RME.csv", row.names = FALSE)
 ```
