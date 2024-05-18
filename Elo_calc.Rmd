@@ -10,25 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 install.packages("PlayerRatings")
 install.packages("dplyr")
-
 library("PlayerRatings")
 library("dplyr")
 setwd("C:/Users/mrche/info201/exploratory-analysis-anguyenuw")
-
-f <- read.csv("csvfiles/p02dataset.csv")
-ocl_w23_withq <- read.csv("csvfiles/ocl_w23_withq.csv")
-all_mps <- read.csv("csvfiles/all_mps.csv") %>%
-          filter(!is.na(User.ID))
-colnames(f)
-#ncol(f)
-#nrow(f)
-#View(f)
-
-no_broken <- all_mps %>% filter(!is.na(User.ID))
-womp <- all_mps %>% filter(!is.na(User.ID))
-wompa <- all_mps %>% filter(is.na(User.ID))
-
-
 
 #method 1: compare players to their opponents and teammates
 # sort by datetime, 
@@ -88,7 +72,6 @@ for (match_id in match_ids) {
 }
 osu_ratings_m1 <- elom(score_history, nn = max_players, exact = FALSE, base = base2, history = FALSE)
 ```
-
 #method 2: compare players to everyone who played the same map, 
 #            within a certain timeframe
 
@@ -157,8 +140,6 @@ while (nrow(by_datetime) > 0) {
 }
 View(osu_ratings_m2$ratings)
 ```
-
-
 #method 3: same as method 2, but more efficient
 
 #phase 1 - collect scores
@@ -179,9 +160,7 @@ View(osu_ratings_m2$ratings)
 #  sort score history by datetime
 #  iteratively send shards through elom in temporal order
 #    send in batches to reduce memory costs
-
 ```{r}
-scores_raw 
 scores_raw <- read.csv("csvfiles/p02dataset.csv") %>%
           filter(!is.na(User.ID)) %>%
           distinct()
@@ -223,8 +202,6 @@ for (map_shard in scores) {
     
     #
     players_and_scores <- data.frame(matrix(ncol = 1 + 2*n, nrow = 0))
-    #player_vec <- map_scores$Username
-    #score_vec <- map_scores$Score
     
     players_and_scores[1, 1] <- time
     players_and_scores[1, 2:(1 + n)] <- map_scores$User.ID
@@ -236,7 +213,6 @@ for (map_shard in scores) {
   }
 }
 
-
 # phase 2 - sort score vectors, calc elo in time order
 time_indices <- time_indices %>% arrange(Datetime)
 
@@ -245,19 +221,6 @@ osu_ratings_m3 <- NULL
 i_ranges <- list(1:99, 100:999, 1000:4999, 5000:9999, 10000:19999, 20000:34999, 
                  35000:49999, 50000:64999, 65000:79999, 80000:94999, 95000:106975)
 i_ranges[[length(i_ranges) + 1]] <- (1000:length(time_indices$Datetime))
-#i_range <- 1:100
-#i_range <- 101:1000
-#i_range <- 1001:2000
-#i_range <- 2001:3000
-#i_range <- 3001:6000
-#i_range <- 6001:9999
-#i_range <- 10000:20000
-#i_range <- 20001:29999
-#i_range <- 30000:44999
-#i_range <- 45000:59999
-#i_range <- 60000:74999
-#i_range <- 75000:89999
-#i_range <- 
 for (i in i_ranges[[12]]) {
   index = time_indices$Index[i]
   scorevec <- score_history[[index]]
@@ -271,26 +234,28 @@ for (i in i_ranges[[12]]) {
                            history = FALSE)
 }
 
-
 View(osu_ratings_m3$ratings)
 ```
-
-
-
-# gathering all players
+# compile player data
+#   first finds every user_id 
+#   scraper.py queries for user data
+#   add in RME ratings
 ```{r}
 all_player_ids <- scores_raw %>% 
   select(User.ID) %>% 
   unique() %>% 
   unlist(use.names = FALSE)
-
 write.csv(all_player_ids, "csvfiles/all_player_ids.csv", row.names = FALSE)
 
-# see scraper.py/gather_players
+# see scraper.py/gather_players()
 
-player_data <- read.csv("csvfiles/user_data - Copy.csv")
-ratings_with_userid <- player_ratings
-
+player_data <- read.csv("csvfiles/user_data/user_data_0.csv") %>% 
+  rbind(read.csv("csvfiles/user_data/user_data_1.csv")) %>%
+  rbind(read.csv("csvfiles/user_data/user_data_2.csv")) %>%
+  rbind(read.csv("csvfiles/user_data/user_data_3.csv")) %>%
+  rbind(read.csv("csvfiles/user_data/user_data_4.csv")) %>%
+  rbind(read.csv("csvfiles/user_data/user_data_5.csv")) %>%
+  rbind(read.csv("csvfiles/user_data/user_data_6.csv"))
 
 # fill in RME ratings
 player_data <- player_data %>%
@@ -298,7 +263,10 @@ player_data <- player_data %>%
   mutate(RME = Rating) %>%
   select(UserID, Username, GlobalRank, PP, RME, Location)
 
-player_data %>% select(UserID, Username, GlobalRank, PP, RME, Location)
+# delete NA values
+# these may happen because a player was banned between 2023 and now
+player_data <- player_data %>%
+  filter((!is.na(RME)) & (!is.na(GlobalRank))) 
+
+write.csv(player_data, "csvfiles/user_data/users_with_RME.csv", row.names = FALSE)
 ```
-
-
