@@ -72,6 +72,7 @@ for (match_id in match_ids) {
 }
 osu_ratings_m1 <- elom(score_history, nn = max_players, exact = FALSE, base = base2, history = FALSE)
 ```
+
 #method 2: compare players to everyone who played the same map, 
 #            within a certain timeframe
 
@@ -140,6 +141,7 @@ while (nrow(by_datetime) > 0) {
 }
 View(osu_ratings_m2$ratings)
 ```
+
 #method 3: same as method 2, but more efficient
 
 #phase 1 - collect scores
@@ -236,19 +238,19 @@ for (i in i_ranges[[12]]) {
 
 View(osu_ratings_m3$ratings)
 ```
-# compile player data
-#   first finds every user_id 
-#   scraper.py queries for user data
-#   add in RME ratings
+
+# write all user ids found in the dataset
+# used by scraper.py to get player info
 ```{r}
 all_player_ids <- scores_raw %>% 
   select(User.ID) %>% 
   unique() %>% 
   unlist(use.names = FALSE)
 write.csv(all_player_ids, "csvfiles/all_player_ids.csv", row.names = FALSE)
+```
 
-# see scraper.py/gather_players()
-
+# compile player data with RME ratings
+```{r}
 player_data <- read.csv("csvfiles/user_data/user_data_0.csv") %>% 
   rbind(read.csv("csvfiles/user_data/user_data_1.csv")) %>%
   rbind(read.csv("csvfiles/user_data/user_data_2.csv")) %>%
@@ -259,9 +261,9 @@ player_data <- read.csv("csvfiles/user_data/user_data_0.csv") %>%
 
 # fill in RME ratings
 player_data <- player_data %>%
-  left_join(ratings_with_userid, by = join_by(Username == Player)) %>%
+  left_join(osu_ratings_m3$ratings, by = join_by(Username == Player)) %>%
   mutate(RME = Rating) %>%
-  select(UserID, Username, GlobalRank, PP, RME, Location)
+  select(UserID, Username, GlobalRank, PP, RME, Location, Games)
 
 # delete NA values
 # these may happen because a player was banned between 2023 and now
@@ -272,7 +274,6 @@ player_data <- player_data %>%
 player_data <- player_data %>%
   arrange(desc(RME)) %>%
   mutate(RMERanking = 1:length(player_data$UserID), .after=RME)
-
 
 write.csv(player_data, "csvfiles/user_data/users_with_RME.csv", row.names = FALSE)
 ```
