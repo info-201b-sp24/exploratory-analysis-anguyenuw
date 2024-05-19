@@ -44,13 +44,15 @@ Some questions I want to answer are:
 
 In this project I will compare scores set by players, but I will also simplify the analysis by only considering "wins", "draws", and "losses", defined as achieving a higher, equal, or lower score as another player in the same match.
 
-This simplification allows me to use ranking systems like Elo, used for zero-sum games like chess, tennis, and other e-sports (Ebtekar) (Moncav). In particular, I want to use the Glicko-2 rating system, which incorporates "rating deviation" that specifies how confident the rating system is in the player's true rating (Glickman).  
+This simplification allows me to use ranking systems like Elo, used for zero-sum games like chess, tennis, and other e-sports (Ebtekar) (Moncav). In this project, I used the PlayerRatings package created by Alec Stephenson and Jeff Sonas, which includes a dynamic method for calculating Elo in variable-player games (Stephenson).
 
 Ebtekar, A., & Liu, P. (2021). Elo-MMR: A rating system for massive multiplayer competitions. Proceedings of the Web Conference 2021. https://doi.org/10.1145/3442381.3450091 
 
 Glickman, M. E. (2022, March 22). Example of the glicko-2 system. http://www.glicko.net/glicko/glicko2.pdf 
 
 Moncav, M. (2020, March 6). What is elo? an explanation for competitive gaming’s Hidden Rating System. Dot Esports. https://dotesports.com/general/news/elo-ratings-explained-20565 
+
+Stephenson, A., & Sonas, J. (2020). PlayerRatings: Dynamic Updating Methods for Player Ratings Estimation. https://cran.r-project.org/package=PlayerRatings
 
 ### The Dataset
 
@@ -69,9 +71,9 @@ I collected this data for use in this project.
 
 Explaining the datasets
 
-There are two tables of data. The first, **Scores**, records all scores set in tournament matches in the year 2023. The second, **Players**, records information about each player who appears in **Scores**, including their official rank, calculated RME rating, and country. 
+There are two tables of data. The first, **Scores**, records scores set in tournament matches in the year 2023. The second, **Players**, records information about each player who appears in **Scores**, including their official rank, calculated RME rating, and country. 
 
-Data collection is about 60% complete. Currently, there are about 1,140,000 observations in the **Scores** dataset, and about 17,000 observations in the **Players** dataset. These encompass every osu! tourney match played from Jan 1, 2023 to August 14, 2023
+Data collection is about 60% complete. Currently, there are about 1,140,000 observations in the **Scores** dataset, and about 17,000 observations in the **Players** dataset. These encompass every osu! tourney match played from Jan 1, 2023 to August 14, 2023. 
 
 There are 8 features in the Scores dataset:
 - Match ID - the ID number of the tournament match (integer)
@@ -94,21 +96,24 @@ There are 6 features in the Players dataset:
 Note that username, global rank, performance points, and location were accessed on May 18th, 04:00 UTC.
 
 What, if any, ethical questions or questions of power do you need to consider when working with this data?  
+
+I might need to consider who has connections in the osu! tournament scene, allowing them to play in higher-skill tournaments.
+
 What are possible limitations or problems with this data?   (at least 200 words)
 
-One limitation of this data is that I only processed tournament matches that happened in 2023. A more extensive rating system would tally matches across several years, but I will only query the osu! API for one year's worth of matches. A related limitation is that I accessed player data 5 months into 2024. Players will have gained or lost ranks in the 5 months since 2023, which will limit the conclusions I can make.
+One limitation of this data is that I've currently only processed tournament matches up to Aug 13, 2023. A more extensive rating system would tally matches across several years, but I will only query the osu! API for one year's worth of matches. A related limitation is that I accessed player data 5 months into 2024. Players will have gained or lost ranks in the 5 months since 2023, which will limit the conclusions I can make.
 
 A problem that I mostly addressed is the fact that not all maps played in a tournament match are actually part of the match. Players will often play a "warm-up" map before the match, which is logged in the match history. Players can also play maps after the match is over, which is also logged in the match history. I cleaned most occurences of these by analyzing the amount of players who played each map.
 
-Finally, I improperly used multiprocessing in my API scraper program, so a few dozen rows in my Scores dataset were overwritten by fellow scraper processes. I also forgot to filter out any non-osu!standard games. In the next phase of the project, I will requery every match ID after fixing these problems. For now, I have omitted these rows in my analysis.
+Finally, I improperly used multiprocessing in my API scraper program, so a few dozen rows in my Scores dataset were corrupted by fellow scraper processes. I also forgot to filter out any non-osu!standard games. In the next phase of the project, I will requery every match ID after fixing these problems. For now, I have omitted these rows in my analysis.
 
 ### Implications
 
-Finding discrepancies between players' global ranks and tournament performance could inform the development team at osu! about what skillsets may be undervalued in the official rating system.
+Finding discrepancies between players' global ranks and tournament performance could inform the development team at osu! about what skillsets may be undervalued in the official rating system. A tournament rating system could also lead to new ways to categorize players by skill level: currently, most tournaments categorize players by Badge-Weighted Seeding (BWS), which uses a player's official rank and the number of Badges they have (players earn Badges by winning officially supported tournaments). To some people, BWS is insufficient, because it is still tied to official rankings, places extreme emphasis on tournament winners, and doesn't consider an individual player's contribution to a winning team. A more tournament-based and individualized approach may be more accurate at estimating player skill.
 
 ### Limitations & Challenges
 
-A fundamental limitation of applying an Elo model to osu! is that, in team-based tournaments, a player is free to not play a map, so if they don't want to play a map, they can have their teammates fill in. This means that a player can always play to their strengths. A hypothetical player who always plays well on a single type of map and never plays any other map could theoretically top the rankings, despite most of the commonly accepted "best tournament players" having well-rounded skillsets.
+A fundamental limitation of applying an Elo model to osu! is that, in team-based tournaments, a player is free to not play a map. Only a subset of the team will play at any given time, so if a person doesn't want to play a map, they can have their teammates fill in. This means that a player can almost always play to their strengths. A hypothetical player who always plays well on a single type of map and never plays any other map could theoretically top the rankings, despite most people valuing well-roundedness when talking about the "best" tournament players.
 
 Data cleaning and preparation were the bulk of the work in this project. I filtered out these conditions while building my dataset:
 
@@ -116,7 +121,6 @@ Data cleaning and preparation were the bulk of the work in this project. I filte
 - Some maps which were not part of a match, e.g. warm-ups, tiebreaker showcases
 - Matches which had zero maps played
 - Maps which have been deleted from the osu! server
-
 
 When calculating player ratings, I also filtered out these conditions:
 
@@ -126,45 +130,66 @@ When calculating player ratings, I also filtered out these conditions:
 
 I did not filter out these conditions:
 
-- A few maps which were not part of a match, e.g warm-ups, because I could not detect them
-- Maps not played in the osu! standard gamemode, because I forgot to filter them
+- A few maps which were not part of a match, e.g warm-ups, because I could not algorithmically detect them
+- Maps not played in the osu! standard gamemode, because I forgot to filter them. These will be filtered out when I re-gather data.
 
-### Summary Information
+## Summary Information
 ```{r summary info, echo=FALSE, message=FALSE}
 source("summary.R")
 ```
-Write a summary paragraph of findings that includes the 5 values calculated from your summary information R script 
-```{r sumtable}
+We found that, from Jan 1 2023, to Aug 13 2023, "active" players (players who set at least 30 scores in the Scores dataset) achieved a mean RME rating of **`r mean_RME %>% round(digits=1)`**, and a median RME rating of **`r median_RME %>% round(digits=1)`**. We define an "*n*-digit player" as a player with *n* digits in their global rank. For example, the 1,900^th^ ranked player is a 4-digit player. Then, the phrase "*n*-digits" refers to every player with *n* digits in their global rank. 
+
+Across the ranks, there is a noticeable correlation between performance in the official rankings, and performance in tournaments. 6-digits have a mean RME of `r mean_RME_per_digit[6] %>% round(digits=1)`, 5-digits have a mean RME of `r mean_RME_per_digit[5] %>% round(digits=1)`, and 4-, 3-, 2-, and 1- digits have respective mean RMEs of `r mean_RME_per_digit[4] %>% round(digits=1)`, `r mean_RME_per_digit[3] %>% round(digits=1)`, `r mean_RME_per_digit[2] %>% round(digits=1)`, and `r mean_RME_per_digit[1] %>% round(digits=1)`. Higher-ranked players generally perform better in tournaments than lower-ranked players. 
+
+Higher-ranked players also play more tournaments on average. Of all active players, 6-digits played a mean of `r mean_Games_per_digit[6] %>% round(digits=0)` maps, 5-digits played a mean of `r mean_Games_per_digit[5] %>% round(digits=0)` maps, and 4-, 3-, 2-, and 1- digits played means of `r mean_Games_per_digit[4] %>% round(digits=0)`, `r mean_Games_per_digit[3] %>% round(digits=0)`, `r mean_Games_per_digit[2] %>% round(digits=0)`, and `r mean_Games_per_digit[1] %>% round(digits=0)` maps respectively. This could mean that higher-ranked players are more motivated to play tournaments, or it could mean that players who play more tournaments become better players.
+
+### Summary Table 1: Top 5 RME players
+These are the top 5 highest-ranked players in the RME system, with their corresponding official ranks (as of May 17 2024):
+```{r sumtable, echo=FALSE}
 source("summary.R")
-kable(summary_info) %>%
+kable(summary_top_5_RME) %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+```
+We can see that the best players in the RME system are also very highly-ranked in the offical system, including the official #1 osu! player, mrekk.
+
+### Summary Table 2: Top 5 official players
+These are the top 5 highest-ranked players in the offical system (as of May 17 2024), with their corresponding RME ranks:
+```{r sumtable2, echo=FALSE}
+source("summary.R")
+kable(summary_top_5_Osu) %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+```
+We also see that the best players in the official ranking system are very highly-ranked in the RME system, with the exception of "chud son", who is not a notable tournament player.
+
+### Grouped Table: The most active countries
+These are the 20 countries with the most active players from Jan 1 2023 to Aug 13 2023, along with each country's highest-rated player:
+```{r grouped_table, echo=FALSE}
+source("table_by_country.R")
+kable(table_display2) %>%
   kable_styling(bootstrap_options = "striped", full_width = FALSE)
 ```
 
-### Table
+I analyzed players grouped by country to see if geographic location had any impact on a player's performance. We can see that, for all countries, their Average RME hovers with 100 points of the average RME of all active players. Also, most countries have at least one player in the top 100 RME rankings. This suggests that geographic location has little impact on a player's performance in tournaments.
 
-Include a table of aggregate information
-
-Describe why you included the table and what information it reveals
-
-### Chart 1
-
-Include a chart
-
-Describe why you chose this chart and what information it reveals
-
-Here's an example of how to run an R script inside an RMarkdown file:
-
-```{r, echo = FALSE, code = readLines("chart1_example.R")}
+### Chart 1: Official rankings vs RME rating
+```{r chart1, echo=FALSE, message=FALSE}
+source("chart1_rme_vs_global.R")
+plot(scatter)
 ```
 
-### Chart 2
+This scatterplot graphs a player's official rank (as of May 17 2024) versus their RME rating. 
 
-Include a chart
+I analyzed this relationship to further find any correlation between a player's performance in the official ranking system versus performance in tournaments. There is a very weak negative correlation between official rank and RME rating - as a player's rank decreases (i.e. gets closer to #1), their RME rating generally increases. This is very noticable in the top 5,000 players, where we can see the density of high-RME players increases dramatically. Most top players in one system are also near the top in the other.
 
-Describe why you chose this chart and what information it reveals
+However, the overall correlation is very weak. This suggests that a player's official rank doesn't have much effect of their tournament performance.
 
-### Chart 3
+### Chart 2: Distribution of RME Ratings
+```{r chart2, echo=FALSE, message=FALSE}
+source("chart3_histogram_rme.R")
+plot(RME_histogram)
+```
 
-Include a chart
+This histogram shows the distribution of players' RME ratings, with a bin size of 50 RME. 
 
-Describe why you chose this chart and what information it reveals
+I wanted to see if osu! tournaments were dominated by a small elite group of players, or if there's a more balanced distribution of tournament performance. As noted in the summary, the mean RME rating is 1571.3. We can see that ratings are slightly skewed to the right, with a small group of players in the 2000-2400 range. This is not reflected on the other side of the mean, as there are very few players in the 600-1000 range. However, the vast majority of players are still within 500 RME of the mean. This suggests that the osu! tournament scene has a very balanced population between lower, middle, and higher-skilled players. 
+

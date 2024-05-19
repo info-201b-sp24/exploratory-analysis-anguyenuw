@@ -9,4 +9,5 @@ RME_histogram <- ggplot(players, aes(x = RME)) + geom_histogram(binwidth = 50, c
 RME_histogram <- RME_histogram + labs(title="Distribution of RME Ratings (up to Aug 13 2023)", 
                   subtitle="Players with at least 30 tournament scores from Jan 1 2023 to Aug 13 2023", 
                   y="Number of players", 
-                  x="RME Rating (bin size )")
+                  x="RME Rating")
+RME_histogram
