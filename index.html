@@ -615,12 +615,16 @@ offering more varied types of maps to test players on. Most of the best
 tournament players are indeed in the highest official ranks and vice
 versa, but some players stand out as especially skilled at either
 tournament play or singleplayer play.</p>
-<p>Some questions I want to answer are: - Who are the best tournament
-players? - Are highly ranked players on the official leaderboards
-similarly highly ranked in tournament performance? - Are highly
-performant players in tournaments similarly highly ranked in the
-official leaderboards? - Is the official osu! ranking system
-representative of overall skill?</p>
+<p>Some questions I want to answer are:</p>
+<ul>
+<li>Who are the best tournament players?</li>
+<li>Are highly ranked players on the official leaderboards similarly
+highly ranked in tournament performance?</li>
+<li>Are highly performant players in tournaments similarly highly ranked
+in the official leaderboards?</li>
+<li>Is the official osu! ranking system representative of overall
+skill?</li>
+</ul>
 </div>
 <div id="related-work" class="section level3">
 <h3>Related Work</h3>
@@ -668,20 +672,32 @@ calculated RME rating, and country.</p>
 17,000 observations in the <strong>Players</strong> dataset. These
 encompass every osu! tourney match played from Jan 1, 2023 to August 14,
 2023.</p>
-<p>There are 8 features in the Scores dataset: - Match ID - the ID
-number of the tournament match (integer) - Tourney Abbreviation - a
-string representing the tourney this match was part of - Datetime - when
-the map was played (expressed in UTC) - Map ID - what map was played
-(integer) - Player ID - who played this map (integer) - Username - who
-played this map (string), accessed during data collection - Mods - what
-ingame modifications the player had active during the map (enum) - Score
-- what score the player achieved (integer from 0 to 1,250,000)</p>
-<p>There are 6 features in the Players dataset: - Player ID - a player’s
-ID - Username - this player’s username - Global rank - this player’s
-official rank (integer) - Performance points - this player’s official
-performance score (float) - RME Rating - this player’s RME rating
-(float) - Location - the country displayed on this player’s profile
-(enum: ISO 3166-1 alpha-2 code)</p>
+<p>There are 8 features in the Scores dataset:</p>
+<ul>
+<li>Match ID - the ID number of the tournament match (integer)</li>
+<li>Tourney Abbreviation - a string representing the tourney this match
+was part of</li>
+<li>Datetime - when the map was played (expressed in UTC)</li>
+<li>Map ID - what map was played (integer)</li>
+<li>Player ID - who played this map (integer)</li>
+<li>Username - who played this map (string), accessed during data
+collection</li>
+<li>Mods - what ingame modifications the player had active during the
+map (enum)</li>
+<li>Score - what score the player achieved (integer from 0 to
+1,250,000)</li>
+</ul>
+<p>There are 6 features in the Players dataset:</p>
+<ul>
+<li>Player ID - a player’s ID</li>
+<li>Username - this player’s username</li>
+<li>Global rank - this player’s official rank (integer)</li>
+<li>Performance points - this player’s official performance score
+(float)</li>
+<li>RME Rating - this player’s RME rating (float)</li>
+<li>Location - the country displayed on this player’s profile (enum: ISO
+3166-1 alpha-2 code)</li>
+</ul>
 <p>Note that username, global rank, performance points, and location
 were accessed on May 18th, 04:00 UTC.</p>
 <p>What, if any, ethical questions or questions of power do you need to
