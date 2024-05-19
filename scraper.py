@@ -175,22 +175,24 @@ async def scrape_all(mod):
     # new range history with multiprocessing
     # 105970000 
     # 107000000
-    start_id = 105970000
-    end_id =   107000000
-    overwrite = True
+    # 108750000
+    #
+    start_id = 107000000
+    end_id =   108750000
+    overwrite = False
     dest = f"csvfiles/mp_data/all_mps_{mod}.csv"
     logdest = f"csvfiles/mp_data/id_abbrs_osu_{mod}.csv"
-    if overwrite: 
-        with open(dest, "w", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(("MatchID", 
-                        "TourneyAbbreviation",
-                        "Datetime", 
-                        "MapID", 
-                        "UserID", 
-                        "Username", 
-                        "Mods", 
-                        "Score"))
+    # if overwrite: 
+    #     with open(dest, "w", newline='') as f:
+    #         writer = csv.writer(f)
+    #         writer.writerow(("MatchID", 
+    #                     "TourneyAbbreviation",
+    #                     "Datetime", 
+    #                     "MapID", 
+    #                     "UserID", 
+    #                     "Username", 
+    #                     "Mods", 
+    #                     "Score"))
     prev_time = datetime.datetime.now()
     match_name = "hey"
     for i in range(start_id, end_id):
@@ -207,13 +209,13 @@ async def scrape_all(mod):
                 abbr = (match_name[0:match_name.find(":")]).strip()
                 await write_csv((abbr, i), logdest)
 
-                fid = match_response.first_event_id
-                events = match_response.events
                 users = match_response.users
                 user_dict = dict()
                 for user in users:
                     user_dict[user.id] = user.username
                 # gather all of the maps played in this match
+                fid = match_response.first_event_id
+                events = match_response.events
                 lowest = 999999999999
                 all_events = list()
                 for event in events:
@@ -246,6 +248,7 @@ async def scrape_all(mod):
                 # second pass - for each map, for each score, write a csv row about that score 
                 #     skip any maps with unusual player counts
                 #     skip any maps with non-osu gamemodes
+                #     skip any deleted maps
                 for event in all_events:
                     game = event.game
                     if not game.mode == GameMode.OSU: continue
@@ -328,11 +331,6 @@ async def gather_players(mod):
                     time.sleep(0.2)
                 else:
                     break
-
-
-            
-
-
 
 
 async def test():
