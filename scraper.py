@@ -7,6 +7,7 @@ import sqlite3
 import csv
 import datetime
 import traceback
+import aiohttp
 from time import sleep
 from constants import *
 from ossapi import OssapiAsync, UserLookupKey, GameMode, RankingType, MatchEventType, BeatmapsetCompact, Ossapi
@@ -177,8 +178,9 @@ async def scrape_all(mod):
     # 107000000
     # 108173700
     # 109998000
+    # 111300000
     start_id = 109998000
-    end_id =   110000000
+    end_id =   111300000
     overwrite = False
     dest = f"csvfiles/mp_data/all_mps_{mod}.csv"
     logdest = f"csvfiles/mp_data/id_abbrs_osu_{mod}.csv"
@@ -280,6 +282,9 @@ async def scrape_all(mod):
             except TypeError:
                 print(f"type problem {id}")
                 break
+            except aiohttp.client_exceptions.ServerDisconnectedError:
+                print(f"disconnected")
+                continue
             except Exception:
                 print(f"PROBLEM {id}")
                 with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
