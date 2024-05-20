@@ -74,7 +74,7 @@ Explaining the datasets
 
 There are two tables of data. The first, **Scores**, records scores set in tournament matches in the year 2023. The second, **Players**, records information about each player who appears in **Scores**, including their official rank, calculated RME rating, and country. 
 
-Data collection is about 60% complete. Currently, there are about 1,140,000 observations in the **Scores** dataset, and about 17,000 observations in the **Players** dataset. These encompass every osu! tourney match played from Jan 1, 2023 to August 14, 2023. 
+Data collection is about 60% complete. Currently, there are about 1,140,000 observations in the **Scores** dataset, and about 17,000 observations in the **Players** dataset. These encompass every osu! tourney match played from Jan 1, 2023 to August 13, 2023. 
 
 There are 8 features in the Scores dataset:
 
@@ -174,7 +174,7 @@ kable(table_display2) %>%
 
 I analyzed players grouped by country to see if geographic location had any impact on a player's performance. We can see that, for all countries, their Average RME hovers within 100 points of the average RME of all active players (`r mean_RME %>% round(digits=1)`). Also, most countries have at least one player in the top 100 RME rankings. This suggests that geographic location has little impact on a player's performance in tournaments.
 
-### Chart 1a: Official rankings vs RME rating
+### Chart 1a: Global Ranking VS RME Rating
 ```{r chart1a, echo=FALSE, message=FALSE}
 source("chart1_rme_vs_global.R")
 plot(scatter)
@@ -187,7 +187,7 @@ I analyzed this relationship to further find any correlation between a player's 
 However, the overall correlation is weak. This suggests that a player's official rank is generally associated with their tournament performance.
 
 
-### Chart 1b: Official rankings (log plot) vs RME rating
+### Chart 1b: Global Ranking (log) VS RME Rating
 ```{r chart1b, echo=FALSE, message=FALSE}
 source("chart1_rme_vs_global.R")
 plot(scatter_log)
@@ -196,7 +196,7 @@ plot(scatter_log)
 This scatterplot graphs the same data as Graph 1a, but using a log-plot for the Global Rank axis. I created this graph to see if the relationship between global rank and RME rating was logarithmic, which appears to be true. This matches up with my summary analysis, where I grouped players into *n*-digits, a base-10 logarithmic scale. There is a clear negative relationship between the log of a player's global rank and their RME. This relationship breaks down for ranks beyond 100,000, but many of those players were calculated on gamemodes that aren't osu!standard, which I forgot to filter out.
 
 
-### Chart 2: Distribution of RME Ratings
+### Chart 2: Distribution of RME Ratings (up to Aug 13 2023)
 ```{r chart2, echo=FALSE, message=FALSE}
 source("chart3_histogram_rme.R")
 plot(RME_histogram)
