@@ -175,10 +175,10 @@ async def scrape_all(mod):
     # new range history with multiprocessing
     # 105970000 
     # 107000000
-    # 108750000
-    #
-    start_id = 107000000
-    end_id =   108750000
+    # 108173700
+    # 109998000
+    start_id = 109998000
+    end_id =   110000000
     overwrite = False
     dest = f"csvfiles/mp_data/all_mps_{mod}.csv"
     logdest = f"csvfiles/mp_data/id_abbrs_osu_{mod}.csv"
@@ -277,6 +277,9 @@ async def scrape_all(mod):
             except ConnectionError:
                 print(f"Lol")
                 continue
+            except TypeError:
+                print(f"type problem {id}")
+                break
             except Exception:
                 print(f"PROBLEM {id}")
                 with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
@@ -285,7 +288,7 @@ async def scrape_all(mod):
                     traceback.print_exc(file=f)
             else:
                 break
-            
+    print(f"process {mod} finished")
         
 
 async def gather_players(mod):
