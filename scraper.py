@@ -278,21 +278,25 @@ async def scrape_all(mod):
                 break
             except ConnectionError:
                 print(f"Lol")
-                continue
             except TypeError:
-                print(f"type problem {id}")
+                print(f"type problem {i}")
                 break
             except aiohttp.client_exceptions.ServerDisconnectedError:
-                print(f"disconnected")
-                continue
+                print(f"disconnected {i}")
+            except aiohttp.client_exceptions.ContentTypeError:
+                print(f"content type error {i}")
             except Exception:
-                print(f"PROBLEM {id}")
+                print(f"PROBLEM {i}")
                 with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
                     print(f"\n{datetime.datetime.now()} something went wrong id {i} process {mod}", file=f)
                     print("ERROR: \n", file=f)
                     traceback.print_exc(file=f)
             else:
                 break
+            finally:
+                if attempt >= 9:
+                    with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
+                        print(f"\n{datetime.datetime.now()} attempts exhausted {i} process {mod}", file=f)
     print(f"process {mod} finished")
         
 
