@@ -236,7 +236,7 @@ for (i in i_ranges[[12]]) {
                            history = FALSE)
 }
 
-View(osu_ratings_m3$ratings)
+#View(osu_ratings_m3$ratings)
 ```
 
 # write all user ids found in the dataset
@@ -277,3 +277,34 @@ player_data <- player_data %>%
 
 write.csv(player_data, "csvfiles/user_data/users_with_RME.csv", row.names = FALSE)
 ```
+
+
+# verify raw data
+```{r}
+# find the largest time difference between 2 scores in the dataset 
+library(dplyr)
+setwd("C:/Users/mrche/info201/exploratory-analysis-anguyenuw")
+all <- read.csv("csvfiles/mp_data/all_mps_0.csv") %>% 
+  rbind(read.csv("csvfiles/mp_data/all_mps_1.csv")) %>%
+  rbind(read.csv("csvfiles/mp_data/all_mps_2.csv")) %>%
+  rbind(read.csv("csvfiles/mp_data/all_mps_3.csv")) %>%
+  rbind(read.csv("csvfiles/mp_data/all_mps_4.csv")) %>%
+  rbind(read.csv("csvfiles/mp_data/all_mps_5.csv")) %>%
+  rbind(read.csv("csvfiles/mp_data/all_mps_6.csv"))
+
+
+A <- function(x) as.numeric(strptime(x, format="%Y-%m-%d %H:%M:%S", tz="UTC"))
+
+all$Datetime <- unlist(lapply(all$Datetime, A))
+all <- all %>% arrange(Datetime)
+lagged <- all %>% lag()
+
+awesome <- all 
+awesome <- awesome %>% 
+  mutate(diff = Datetime - (lagged %>% pull(Datetime)))
+
+awesome %>% 
+  select(diff) %>%
+  max(na.rm = TRUE)
+```
+

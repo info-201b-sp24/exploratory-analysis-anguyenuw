@@ -206,7 +206,7 @@ async def scrape_all(mod):
                 match_name = match_response.match.name
                 valid_match = re.fullmatch(tourney_re, match_name) != None
                 if not valid_match: break
-                if (i%50 == 0): print(f"match id {i} success")
+                if (i%100 == 0): print(f"match id {i} success")
 
                 abbr = (match_name[0:match_name.find(":")]).strip()
                 await write_csv((abbr, i), logdest)
@@ -271,13 +271,13 @@ async def scrape_all(mod):
                         await write_csv(line, dest)
             except ValueError:
                 #print(f"id {i} process {mod} no")
-                if (i%300 == 0): 
+                if (i%500 == 0): 
                     time = datetime.datetime.now()
                     print(f"id {i} process {mod} fail : took {time - prev_time}")
                     prev_time = time
                 break
             except ConnectionError:
-                print(f"Lol")
+                print(f"connection error {i}")
             except TypeError:
                 print(f"type problem {i}")
                 break
@@ -297,6 +297,7 @@ async def scrape_all(mod):
                 if attempt >= 9:
                     with open("errorlog.txt", "a", newline='', encoding='utf-8') as f:
                         print(f"\n{datetime.datetime.now()} attempts exhausted {i} process {mod}", file=f)
+                    await write_csv((datetime.datetime.now, i), "missing_mps.csv")
     print(f"process {mod} finished")
         
 
