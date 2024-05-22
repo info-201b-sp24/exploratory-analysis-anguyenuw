@@ -163,8 +163,16 @@ View(osu_ratings_m2$ratings)
 #  iteratively send shards through elom in temporal order
 #    send in batches to reduce memory costs
 ```{r}
-scores_raw <- read.csv("csvfiles/p02dataset.csv") %>%
-          filter(!is.na(User.ID)) %>%
+scores_raw <- read.csv("csvfiles/mp_data/all_mps_0.csv") %>%
+          rbind(read.csv("csvfiles/mp_data/all_mps_1.csv")) %>%
+          rbind(read.csv("csvfiles/mp_data/all_mps_2.csv")) %>%
+          rbind(read.csv("csvfiles/mp_data/all_mps_3.csv")) %>%
+          rbind(read.csv("csvfiles/mp_data/all_mps_4.csv")) %>%
+          rbind(read.csv("csvfiles/mp_data/all_mps_5.csv")) %>%
+          rbind(read.csv("csvfiles/mp_data/all_mps_6.csv"))
+scores <- scores_raw %>%
+          filter(!is.na(UserID)) %>%
+          filter(Score > 10) %>%
           distinct()
 
 # convert Datetimes to Epoch time
@@ -177,7 +185,7 @@ scores <- scores %>% arrange(Datetime)
 time_limit <- 1209600
 
 # shard data by maps
-scores <- scores %>% group_split(Map.ID)
+scores <- scores %>% group_split(MapID)
 
 score_history <- list()
 time_indices <- data.frame(matrix(ncol = 2, nrow = 0))
@@ -206,7 +214,7 @@ for (map_shard in scores) {
     players_and_scores <- data.frame(matrix(ncol = 1 + 2*n, nrow = 0))
     
     players_and_scores[1, 1] <- time
-    players_and_scores[1, 2:(1 + n)] <- map_scores$User.ID
+    players_and_scores[1, 2:(1 + n)] <- map_scores$UserID
     players_and_scores[1, (2 + n):(1 + 2*n)] <- map_scores$Score
     
     index <- length(score_history) + 1
