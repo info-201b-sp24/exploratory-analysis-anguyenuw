@@ -21,7 +21,7 @@ db = sqlite3.connect("awesome.db")
 #print(api.beatmap(221777).id)
 
 # a tournament match is defined as a multiplayer match whose name fits the format
-#   ABBR: (team 1) vs (team 2)
+#   name: (team 1) vs (team 2)
 tourney_re = re.compile(r".*: \(.*\) [vV][sS]?\.? \(.*\)")
 
 async def scrape_known_mps():
@@ -179,8 +179,9 @@ async def scrape_all(mod):
     # 108173700
     # 109998000
     # 111300000
-    start_id = 109998000
-    end_id =   111300000
+    # 113000000
+    start_id = 111300000
+    end_id =   113000000
     overwrite = False
     dest = f"csvfiles/mp_data/all_mps_{mod}.csv"
     logdest = f"csvfiles/mp_data/id_abbrs_osu_{mod}.csv"
@@ -279,7 +280,8 @@ async def scrape_all(mod):
             except ConnectionError:
                 print(f"connection error {i}")
             except TypeError:
-                print(f"type problem {i}")
+                #forbidden mp links
+                if (i%30 == 0): print(f"private mp {i}")
                 break
             except aiohttp.client_exceptions.ServerDisconnectedError:
                 print(f"disconnected {i}")
@@ -366,9 +368,7 @@ async def test():
         f.write(str({1,3,(3,5)}))  # set of numbers & a tuple
 
 async def write_csv(obj, filename, mode="a"):
-    # TODO: use append mode for multiple sessions
     with open(filename, mode, newline='', encoding='utf-8') as f:
-
         writer = csv.writer(f)
         writer.writerow(obj)
         
