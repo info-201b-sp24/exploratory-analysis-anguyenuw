@@ -180,8 +180,9 @@ async def scrape_all(mod):
     # 109998000
     # 111300000
     # 113000000
-    start_id = 111300000
-    end_id =   113000000
+    # 113956974
+    start_id = 113000000
+    end_id =   113956974
     overwrite = False
     dest = f"csvfiles/mp_data/all_mps_{mod}.csv"
     logdest = f"csvfiles/mp_data/id_abbrs_osu_{mod}.csv"
